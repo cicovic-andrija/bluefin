@@ -9,9 +9,9 @@ import (
 
 func fetchAll(w http.ResponseWriter, r *http.Request) {
 	all := &All{
-		DiveSites: _inmemDatabase.DiveSites,
-		DiveTrips: _inmemDatabase.DiveTrips,
-		Dives:     _inmemDatabase.Dives,
+		DiveSites: bluefin.DiveSites,
+		DiveTrips: bluefin.DiveTrips,
+		Dives:     bluefin.Dives,
 	}
 	encoded, err := json.Marshal(all)
 	if err != nil {

@@ -120,6 +120,14 @@ func (d *Dive) IsTaggedWith(tag string) bool {
 	return false
 }
 
+func (dl *DiveLog) LargestDiveID() int {
+	return len(dl.Dives) - 1
+}
+
+func (dl *DiveLog) LargestSiteID() int {
+	return len(dl.DiveSites) - 1
+}
+
 var cylTypeMappings = map[string]string{
 	"AL100": "aluminium",
 	"HP100": "steel",

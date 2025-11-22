@@ -84,9 +84,9 @@ func readEnvironment() {
 		os.Exit(1)
 	}
 
-	_inmemDatabase.Metadata.Source = os.Getenv(dbPathEnvVar)
-	trace(_env, "%s = %q", dbPathEnvVar, _inmemDatabase.Metadata.Source)
-	if _inmemDatabase.Metadata.Source == "" {
+	bluefin.Metadata.Source = os.Getenv(dbPathEnvVar)
+	trace(_env, "%s = %q", dbPathEnvVar, bluefin.Metadata.Source)
+	if bluefin.Metadata.Source == "" {
 		trace(_error, "%s is empty or undefined", dbPathEnvVar)
 		os.Exit(1)
 	}

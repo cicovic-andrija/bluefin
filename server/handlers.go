@@ -8,7 +8,8 @@ import (
 	"os"
 	"slices"
 	"sort"
-	"strconv"
+
+	"src.acicovic.me/divelog/server/utils"
 )
 
 const (
@@ -60,8 +61,8 @@ func fetchSites(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if r.URL.Query().Get("headonly") == "true" {
-		heads := make([]*SiteHead, 0, len(_inmemDatabase.DiveSites))
-		for _, site := range _inmemDatabase.DiveSites[1:] {
+		heads := make([]*SiteHead, 0, len(bluefin.DiveSites))
+		for _, site := range bluefin.DiveSites[1:] {
 			heads = append(heads, &SiteHead{
 				ID:   site.ID,
 				Name: site.Name,
@@ -73,8 +74,8 @@ func fetchSites(w http.ResponseWriter, r *http.Request) {
 		resp, err = json.Marshal(heads)
 	} else {
 		sites := []*SiteFull{}
-		for _, site := range _inmemDatabase.DiveSites[1:] {
-			sites = append(sites, NewSiteFull(site, _inmemDatabase.Dives[1:]))
+		for _, site := range bluefin.DiveSites[1:] {
+			sites = append(sites, NewSiteFull(site, bluefin.Dives[1:]))
 		}
 		resp, err = json.Marshal(sites)
 	}
@@ -89,14 +90,14 @@ func fetchSites(w http.ResponseWriter, r *http.Request) {
 }
 
 func fetchSite(w http.ResponseWriter, r *http.Request) {
-	siteID := convertAndCheck(r.PathValue("id"), len(_inmemDatabase.DiveSites)-1)
+	siteID := utils.ConvertAndCheckID(r.PathValue("id"), bluefin.LargestSiteID())
 	if siteID == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	site := _inmemDatabase.DiveSites[siteID]
+	site := bluefin.DiveSites[siteID]
 
-	resp, err := json.Marshal(NewSiteFull(site, _inmemDatabase.Dives[1:]))
+	resp, err := json.Marshal(NewSiteFull(site, bluefin.Dives[1:]))
 	if err != nil {
 		trace(_error, "http: failed to marshal single dive site data: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -107,28 +108,28 @@ func fetchSite(w http.ResponseWriter, r *http.Request) {
 }
 
 func fetchTrips(w http.ResponseWriter, r *http.Request) {
-	trips := make([]*Trip, 0, len(_inmemDatabase.DiveTrips))
+	trips := make([]*Trip, 0, len(bluefin.DiveTrips))
 	reverse := r.URL.Query().Get("reverse") == "true"
 	if reverse {
-		for _, trip := range _inmemDatabase.DiveTrips[1:] {
+		for _, trip := range bluefin.DiveTrips[1:] {
 			trips = append(trips, &Trip{
 				ID:    trip.ID,
 				Label: trip.Label,
 			})
 		}
 	} else {
-		for i := len(_inmemDatabase.DiveTrips) - 1; i > 0; i-- {
+		for i := len(bluefin.DiveTrips) - 1; i > 0; i-- {
 			trips = append(trips, &Trip{
-				ID:    _inmemDatabase.DiveTrips[i].ID,
-				Label: _inmemDatabase.DiveTrips[i].Label,
+				ID:    bluefin.DiveTrips[i].ID,
+				Label: bluefin.DiveTrips[i].Label,
 			})
 		}
 	}
 
 	for _, trip := range trips {
-		for _, dive := range _inmemDatabase.Dives[1:] {
+		for _, dive := range bluefin.Dives[1:] {
 			if dive.DiveTripID == trip.ID {
-				trip.LinkedDives = append(trip.LinkedDives, NewDiveHead(dive, _inmemDatabase.DiveSites[dive.DiveSiteID]))
+				trip.LinkedDives = append(trip.LinkedDives, NewDiveHead(dive, bluefin.DiveSites[dive.DiveSiteID]))
 			}
 		}
 		if !reverse {
@@ -154,16 +155,16 @@ func fetchDives(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if r.URL.Query().Get("headonly") == "true" {
-		heads := make([]*DiveHead, 0, len(_inmemDatabase.Dives))
-		for _, dive := range _inmemDatabase.Dives[1:] {
-			heads = append(heads, NewDiveHead(dive, _inmemDatabase.DiveSites[dive.DiveSiteID]))
+		heads := make([]*DiveHead, 0, len(bluefin.Dives))
+		for _, dive := range bluefin.Dives[1:] {
+			heads = append(heads, NewDiveHead(dive, bluefin.DiveSites[dive.DiveSiteID]))
 		}
 		resp, err = json.Marshal(heads)
 	} else {
 		dives := []*DiveFull{}
-		for _, dive := range _inmemDatabase.Dives[1:] {
+		for _, dive := range bluefin.Dives[1:] {
 			if dive.IsTaggedWith(tag) {
-				dives = append(dives, NewDiveFull(dive, _inmemDatabase.DiveSites[dive.DiveSiteID]))
+				dives = append(dives, NewDiveFull(dive, bluefin.DiveSites[dive.DiveSiteID]))
 			}
 		}
 		resp, err = json.Marshal(dives)
@@ -179,14 +180,14 @@ func fetchDives(w http.ResponseWriter, r *http.Request) {
 }
 
 func fetchDive(w http.ResponseWriter, r *http.Request) {
-	diveID := convertAndCheck(r.PathValue("id"), len(_inmemDatabase.Dives)-1)
+	diveID := utils.ConvertAndCheckID(r.PathValue("id"), bluefin.LargestDiveID())
 	if diveID == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	dive := _inmemDatabase.Dives[diveID]
+	dive := bluefin.Dives[diveID]
 
-	resp, err := json.Marshal(NewDiveFull(dive, _inmemDatabase.DiveSites[dive.DiveSiteID]))
+	resp, err := json.Marshal(NewDiveFull(dive, bluefin.DiveSites[dive.DiveSiteID]))
 	if err != nil {
 		trace(_error, "http: failed to marshal single dive data: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -198,7 +199,7 @@ func fetchDive(w http.ResponseWriter, r *http.Request) {
 
 func fetchTags(w http.ResponseWriter, r *http.Request) {
 	tags := make(map[string]int)
-	for _, dive := range _inmemDatabase.Dives[1:] {
+	for _, dive := range bluefin.Dives[1:] {
 		for _, tag := range dive.Tags {
 			tags[tag]++
 		}
@@ -215,18 +216,18 @@ func fetchTags(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderDives(w http.ResponseWriter, r *http.Request) {
-	trips := make([]*Trip, 0, len(_inmemDatabase.DiveTrips))
-	for i := len(_inmemDatabase.DiveTrips) - 1; i > 0; i-- {
+	trips := make([]*Trip, 0, len(bluefin.DiveTrips))
+	for i := len(bluefin.DiveTrips) - 1; i > 0; i-- {
 		trip := &Trip{
 			ID:    i,
-			Label: _inmemDatabase.DiveTrips[i].Label,
+			Label: bluefin.DiveTrips[i].Label,
 		}
-		for i := len(_inmemDatabase.Dives) - 1; i > 0; i-- {
-			dive := _inmemDatabase.Dives[i]
+		for i := len(bluefin.Dives) - 1; i > 0; i-- {
+			dive := bluefin.Dives[i]
 			if dive.DiveTripID == trip.ID {
 				trip.LinkedDives = append(
 					trip.LinkedDives,
-					NewDiveHead(dive, _inmemDatabase.DiveSites[dive.DiveSiteID]),
+					NewDiveHead(dive, bluefin.DiveSites[dive.DiveSiteID]),
 				)
 			}
 		}
@@ -241,8 +242,8 @@ func renderDives(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderSites(w http.ResponseWriter, r *http.Request) {
-	heads := make([]*SiteHead, 0, len(_inmemDatabase.DiveSites))
-	for _, site := range _inmemDatabase.DiveSites[1:] {
+	heads := make([]*SiteHead, 0, len(bluefin.DiveSites))
+	for _, site := range bluefin.DiveSites[1:] {
 		heads = append(heads, &SiteHead{
 			ID:   site.ID,
 			Name: site.Name,
@@ -260,13 +261,13 @@ func renderSites(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderDive(w http.ResponseWriter, r *http.Request) {
-	diveID := convertAndCheck(r.PathValue("id"), len(_inmemDatabase.Dives)-1)
+	diveID := utils.ConvertAndCheckID(r.PathValue("id"), bluefin.LargestDiveID())
 	if diveID == 0 {
 		renderNotFound(w, "dive not found")
 		return
 	}
-	dive := _inmemDatabase.Dives[diveID]
-	site := _inmemDatabase.DiveSites[dive.DiveSiteID]
+	dive := bluefin.Dives[diveID]
+	site := bluefin.DiveSites[dive.DiveSiteID]
 
 	page := Page{
 		Title:      site.Name,
@@ -275,7 +276,7 @@ func renderDive(w http.ResponseWriter, r *http.Request) {
 	}
 	// fix it here because this is the only scenario where it's needed
 	// (although it's not a good design)
-	if page.Dive.NextID == len(_inmemDatabase.Dives) {
+	if page.Dive.NextID == len(bluefin.Dives) {
 		page.Dive.NextID = 0
 	}
 
@@ -283,23 +284,23 @@ func renderDive(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderSite(w http.ResponseWriter, r *http.Request) {
-	siteID := convertAndCheck(r.PathValue("id"), len(_inmemDatabase.DiveSites)-1)
+	siteID := utils.ConvertAndCheckID(r.PathValue("id"), bluefin.LargestSiteID())
 	if siteID == 0 {
 		renderNotFound(w, "site not found")
 		return
 	}
-	site := _inmemDatabase.DiveSites[siteID]
+	site := bluefin.DiveSites[siteID]
 
 	renderTemplate(w, Page{
 		Title:      site.Name,
 		Supertitle: site.Coordinates,
-		Site:       NewSiteFull(site, _inmemDatabase.Dives[1:]),
+		Site:       NewSiteFull(site, bluefin.Dives[1:]),
 	})
 }
 
 func renderTags(w http.ResponseWriter, r *http.Request) {
 	tags := make(map[string]int)
-	for _, dive := range _inmemDatabase.Dives[1:] {
+	for _, dive := range bluefin.Dives[1:] {
 		for _, tag := range dive.Tags {
 			tags[tag]++
 		}
@@ -315,13 +316,13 @@ func renderTags(w http.ResponseWriter, r *http.Request) {
 func renderTaggedDives(w http.ResponseWriter, r *http.Request) {
 	tag := r.PathValue("tag")
 	dives := []*DiveHead{}
-	for i := len(_inmemDatabase.Dives) - 1; i > 0; i-- {
-		dive := _inmemDatabase.Dives[i]
+	for i := len(bluefin.Dives) - 1; i > 0; i-- {
+		dive := bluefin.Dives[i]
 		for _, t := range dive.Tags {
 			if t == tag {
 				dives = append(
 					dives,
-					NewDiveHead(dive, _inmemDatabase.DiveSites[dive.DiveSiteID]),
+					NewDiveHead(dive, bluefin.DiveSites[dive.DiveSiteID]),
 				)
 			}
 		}
@@ -351,6 +352,7 @@ func renderNotFound(w http.ResponseWriter, title string) {
 	})
 }
 
+// TODO: align this with how it is done in koi
 func multiplexer() http.Handler {
 	mux := http.NewServeMux()
 
@@ -464,12 +466,4 @@ func renderTemplate(w http.ResponseWriter, p Page) {
 	if err := _pageTemplate.Execute(w, p); err != nil {
 		trace(_error, "http: render template: %v", err)
 	}
-}
-
-func convertAndCheck(idStr string, max int) int {
-	id, err := strconv.Atoi(idStr)
-	if err != nil || id < 1 || id > max {
-		return 0
-	}
-	return id
 }
