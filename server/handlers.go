@@ -11,27 +11,46 @@ import (
 	"strconv"
 )
 
+const (
+	PathFavicon      = "/favicon.ico"
+	PathProzaLibre   = "/ProzaLibre-Regular.woff2"
+	FileFavicon      = "data/favicon.ico"
+	FileProzaLibre   = "data/ProzaLibre-Regular.woff2"
+	ContentTypeWoff2 = "font/woff2"
+)
+
 var _pageTemplate = template.Must(template.ParseFiles("data/pagetemplate.html"))
 
 func defaultHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/favicon.ico" {
-		var (
-			icon *os.File
-			fi   os.FileInfo
-		)
-		icon, err := os.Open("data/favicon.ico")
-		if err == nil {
-			fi, err = icon.Stat()
-		}
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		http.ServeContent(w, r, "favicon.ico", fi.ModTime(), icon)
+	var filePath, contentType string
+	switch r.URL.Path {
+	case PathFavicon:
+		filePath = FileFavicon
+	case PathProzaLibre:
+		filePath = FileProzaLibre
+		contentType = ContentTypeWoff2
+	default:
+		http.NotFound(w, r)
 		return
 	}
 
-	http.NotFound(w, r)
+	var (
+		file *os.File
+		fi   os.FileInfo
+	)
+	file, err := os.Open(filePath)
+	if err == nil {
+		fi, err = file.Stat()
+	}
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if contentType != "" {
+		w.Header().Set("Content-Type", contentType)
+	}
+
+	http.ServeContent(w, r, r.URL.Path[1:], fi.ModTime(), file)
 }
 
 func fetchSites(w http.ResponseWriter, r *http.Request) {
