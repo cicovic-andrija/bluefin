@@ -3,7 +3,9 @@ package server
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
+	"unicode"
 
 	"src.acicovic.me/divelog/server/utils"
 	"src.acicovic.me/divelog/subsurface"
@@ -101,11 +103,32 @@ func (p *SubsurfaceCallbackHandler) HandleDive(ddh subsurface.DiveDataHolder) in
 	return dive.ID
 }
 
-func (p *SubsurfaceCallbackHandler) HandleDiveSite(uuid string, name string, coords string) int {
+func (p *SubsurfaceCallbackHandler) HandleDiveSite(uuid string, name string, coords string, description string) int {
+	region := UnlabeledRegion
+	if strings.HasPrefix(description, PrefixForTagsInDescription) {
+		var specialTags string
+		if i := strings.IndexFunc(description, unicode.IsSpace); i != -1 {
+			specialTags = strings.TrimPrefix(description[:i], PrefixForTagsInDescription)
+			description = strings.TrimSpace(description[i:])
+		} else {
+			specialTags = strings.TrimPrefix(description, PrefixForTagsInDescription)
+		}
+
+		// DEVNOTE: DiveSite only supports one special tag for now: {RegionTagPrefix}{value}.
+		// If there arises a need for more, this will need to be refactored.
+		if after, ok := strings.CutPrefix(specialTags, RegionTagPrefix); ok {
+			if value, ok := SpecialTagValueMappings[after]; ok {
+				region = value
+			}
+		}
+	}
+
 	site := &DiveSite{
 		ID:          p.lastSiteID + 1,
 		Name:        name,
 		Coordinates: coords,
+		Description: description,
+		Region:      region,
 
 		sourceID: uuid,
 	}

@@ -216,6 +216,7 @@ func fetchTags(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderDives(w http.ResponseWriter, r *http.Request) {
+	// TODO: refactor this to be similar to renderSites
 	trips := make([]*Trip, 0, len(bluefin.DiveTrips))
 	for i := len(bluefin.DiveTrips) - 1; i > 0; i-- {
 		trip := &Trip{
@@ -242,21 +243,33 @@ func renderDives(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderSites(w http.ResponseWriter, r *http.Request) {
-	heads := make([]*SiteHead, 0, len(bluefin.DiveSites))
+	regionMap := make(map[string][]*SiteHead)
 	for _, site := range bluefin.DiveSites[1:] {
-		heads = append(heads, &SiteHead{
+		regionMap[site.Region] = append(regionMap[site.Region], &SiteHead{
 			ID:   site.ID,
 			Name: site.Name,
 		})
 	}
-	sort.Slice(heads, func(i, j int) bool {
-		return heads[i].Name < heads[j].Name
+
+	siteHeads := make([]*GroupedSites, 0, len(regionMap))
+	for region, sites := range regionMap {
+		sort.Slice(sites, func(i, j int) bool {
+			return sites[i].Name < sites[j].Name
+		})
+		siteHeads = append(siteHeads, &GroupedSites{
+			Region:      region,
+			LinkedSites: sites,
+		})
+	}
+
+	sort.Slice(siteHeads, func(i, j int) bool {
+		return siteHeads[i].Region < siteHeads[j].Region
 	})
 
 	renderTemplate(w, Page{
-		Title:      "Dive sites",
-		Supertitle: "All",
-		Sites:      heads,
+		Title:        "Dive sites",
+		Supertitle:   "All",
+		GroupedSites: siteHeads,
 	})
 }
 

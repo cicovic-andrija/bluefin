@@ -25,6 +25,7 @@ type DiveHead struct {
 	ID               int    `json:"id"`
 	ShortLabel       string `json:"short_label"`
 	DateTimeInPretty string `json:"date_time_in_pretty"`
+	Award            string `json:"award,omitempty"`
 }
 
 type DiveFull struct {
@@ -41,11 +42,17 @@ type Trip struct {
 	LinkedDives []*DiveHead `json:"linked_dives"`
 }
 
+type GroupedSites struct {
+	Region      string
+	LinkedSites []*SiteHead
+}
+
 func NewDiveHead(dive *Dive, diveSite *DiveSite) *DiveHead {
 	return &DiveHead{
 		ID:               dive.ID,
 		ShortLabel:       fmt.Sprintf("Dive %d: %s", dive.Number, diveSite.ShortName()),
 		DateTimeInPretty: dive.datetime.Format("January 2 2006, 15:04"),
+		Award:            dive.Award,
 	}
 }
 
@@ -74,16 +81,16 @@ func (s *SiteFull) URLLongLat() string {
 }
 
 type Page struct {
-	Title      string
-	Supertitle string
-	Trips      []*Trip
-	Sites      []*SiteHead
-	Dives      []*DiveHead
-	Tags       map[string]int
-	Dive       *DiveFull
-	Site       *SiteFull
-	About      bool
-	NotFound   bool
+	Title        string
+	Supertitle   string
+	Trips        []*Trip
+	GroupedSites []*GroupedSites
+	Dives        []*DiveHead
+	Tags         map[string]int
+	Dive         *DiveFull
+	Site         *SiteFull
+	About        bool
+	NotFound     bool
 }
 
 func (p *Page) check() bool {
@@ -91,7 +98,7 @@ func (p *Page) check() bool {
 	if p.Trips != nil {
 		c++
 	}
-	if p.Sites != nil {
+	if p.GroupedSites != nil {
 		c++
 	}
 	if p.Dives != nil {

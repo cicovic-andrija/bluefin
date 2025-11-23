@@ -53,9 +53,9 @@ func (h Handler) HandleHeader(program string, version string) {
 
 }
 
-func (h Handler) HandleDiveSite(uuid string, name string, coords string) int {
+func (h Handler) HandleDiveSite(uuid string, name string, coords string, description string) int {
 	fmt.Printf("\tDIVE_SITE\n")
-	fmt.Printf("\t\tUUID = %q\n\t\tNAME = %q\n\t\tCOORDS = %q\n", uuid, name, coords)
+	fmt.Printf("\t\tUUID = %q\n\t\tNAME = %q\n\t\tCOORDS = %q\n\t\tDESCRIPTION = %q\n", uuid, name, coords, description)
 	return 0
 }
 

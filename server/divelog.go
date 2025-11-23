@@ -28,6 +28,8 @@ type DiveSite struct {
 	Name string `json:"name"`
 
 	Coordinates string   `json:"coordinates,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Region      string   `json:"region,omitempty"`
 	GeoLabels   []string `json:"geo_labels,omitempty"`
 
 	sourceID string
@@ -67,6 +69,7 @@ type Dive struct {
 	TempWaterMin    string   `json:"temp_water_min,omitempty"`
 	TempAir         string   `json:"temp_air,omitempty"`
 	SurfacePressure string   `json:"surface_pressure,omitempty"`
+	Award           string   `json:"award,omitempty"`
 
 	datetime time.Time
 }
@@ -107,7 +110,7 @@ func (d *Dive) Normalize() {
 		d.Gas = "nitrox " + d.Gas
 	}
 
-	if cylType, ok := CylTypeMappings[d.CylType]; ok {
+	if cylType, ok := CylinderTypeMappings[d.CylType]; ok {
 		d.CylType = cylType
 	} else {
 		d.CylType = "unrecognized"
@@ -127,8 +130,17 @@ func (d *Dive) IsTaggedWith(tag string) bool {
 }
 
 func (d *Dive) ProcessSpecialTags(specialTags []string) {
-	// Process tags matching pattern "_key_value" (e.g., "_region_Europe")
-	// Tags are kept as-is in DiveDataHolder, but can be processed here during database building
+	for _, tag := range specialTags {
+		key, value := utils.ParseSpecialTag(tag)
+		switch key {
+		case "animal":
+			// TODO: process animal tags
+		case "award":
+			if mappedAward, ok := AwardMappings[value]; ok {
+				d.Award = mappedAward
+			}
+		}
+	}
 }
 
 func (dl *DiveLog) LargestDiveID() int {

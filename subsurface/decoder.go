@@ -27,7 +27,7 @@ type Handler interface {
 	HandleEnd()
 	HandleHeader(program string, version string)
 	HandleSkip(element string)
-	HandleDiveSite(uuid string, name string, coords string) int
+	HandleDiveSite(uuid string, name string, coords string, description string) int
 	HandleGeoData(siteID int, cat int, label string)
 	HandleDiveTrip(label string) int
 	HandleDive(ddh DiveDataHolder) int
@@ -121,7 +121,7 @@ func DecodeSubsurfaceDatabase(r io.Reader, h Handler) error {
 			} else {
 				// DEVNOTE: this could have been parsed the same way the dive data was parsed
 				// it was left like this to demonstrate how powerful Go's XML parser can be
-				siteID := h.HandleDiveSite(siteXML.UUID, siteXML.Name, siteXML.GPS)
+				siteID := h.HandleDiveSite(siteXML.UUID, siteXML.Name, siteXML.GPS, siteXML.Description)
 				for _, geoData := range siteXML.Geos {
 					if cat, err := strconv.Atoi(geoData.Cat); err != nil {
 						return ErrInvalidFormat
