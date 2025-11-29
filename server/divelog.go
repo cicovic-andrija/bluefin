@@ -93,7 +93,7 @@ func (t *DiveTrip) String() string {
 
 func (d *Dive) Ago() string {
 	years, months, days := utils.DurationToYMD(d.datetime, time.Now().UTC())
-	return fmt.Sprintf("%dy %dm %dd ago", years, months, days)
+	return fmt.Sprintf("%dy %dm %dd", years, months, days)
 }
 
 func (d *Dive) String() string {
@@ -138,8 +138,6 @@ func (d *Dive) ProcessSpecialTags(specialTags []string) {
 	for _, tag := range specialTags {
 		key, value := utils.ParseSpecialTag(tag)
 		switch key {
-		case "animal":
-			// TODO: process animal tags
 		case "award":
 			if mappedAward, ok := AwardMappings[value]; ok {
 				d.Award = mappedAward

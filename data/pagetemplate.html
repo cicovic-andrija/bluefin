@@ -127,7 +127,7 @@
                         c0-4.42-3.58-8-8-8z">
                 </path>
             </svg>
-            <a href="https://github.com/cicovic-andrija/mydives" target="_blank">code</a>
+            <a href="https://github.com/cicovic-andrija/mydives" target="_blank">bluefin code</a>
         </div>
     </header>
 
@@ -135,6 +135,7 @@
     <h1>{{ .Title }}</h1>
     <!-- case 1 -->
     {{ if .Trips }}
+    <p>The last recorded dive was done on {{ (index (index .Trips 0).LinkedDives 0).DateTimeInPretty }}...</p>
     {{ range .Trips }}
     <h3>{{ .Label }}</h3>
     {{ range .LinkedDives }}
@@ -172,7 +173,7 @@
         </tr>
         <tr>
             <td></td>
-            <td>({{ .Dive.Ago }})</td>
+            <td>({{ .Dive.Ago }} ago)</td>
         </tr>
         <tr>
             <td><b>Duration</b></td>

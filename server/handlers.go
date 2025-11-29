@@ -216,7 +216,7 @@ func fetchTags(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderDives(w http.ResponseWriter, r *http.Request) {
-	// TODO: refactor this to be similar to renderSites
+	// TODO: This function can be refactored to be similar to renderSites.
 	trips := make([]*Trip, 0, len(bluefin.DiveTrips))
 	for i := len(bluefin.DiveTrips) - 1; i > 0; i-- {
 		trip := &Trip{
@@ -365,7 +365,6 @@ func renderNotFound(w http.ResponseWriter, title string) {
 	})
 }
 
-// TODO: align this with how it is done in koi
 func multiplexer() http.Handler {
 	mux := http.NewServeMux()
 

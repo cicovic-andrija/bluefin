@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 )
 
@@ -73,6 +74,9 @@ func NewSiteFull(site *DiveSite, allDives []*Dive) *SiteFull {
 			s.LinkedDives = append(s.LinkedDives, NewDiveHead(dive, site))
 		}
 	}
+	sort.Slice(s.LinkedDives, func(i, j int) bool {
+		return s.LinkedDives[i].ID > s.LinkedDives[j].ID
+	})
 	return s
 }
 
