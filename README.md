@@ -97,7 +97,7 @@ Bluefin supports special tags in the format `_key_value` for enhanced metadata p
 In dive site descriptions, use the `tags:` prefix followed by special tags before the actual description:
 
 ```
-tags:_region_pacific Beautiful coral reef dive site
+tags:_region_pacific Beautiful coral reef dive site.
 ```
 
 **Supported tags:**
@@ -148,7 +148,7 @@ To run the container, mount your Subsurface XML database file:
 docker run \
   --name divelog-server \ # optional
   --network $NETWORK_NAME \ # optional
-  --publish 127.0.0.1:8077:8077 \
+  --publish 127.0.0.1:8077:8077 \ # $HOST_IP:$HOST_PORT:$CONTAINER_PORT
   --volume /host/path/to/subsurfacedata.xml:/srv/store/subsurfacedata.xml \
   --env 'DIVELOG_PORT=8077' \
   --restart on-failure:10 \ # optional
