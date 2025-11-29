@@ -1,5 +1,5 @@
 [Unit]
-Description=Dive Log Server
+Description=Bluefin Dive Log Server
 After=network-online.target
 Wants=network-online.target
 
@@ -12,9 +12,9 @@ Environment="DIVELOG_IP_HOST=127.0.0.1"
 Environment="DIVELOG_PORT=52000"
 User=uname
 WorkingDirectory=/srv
-ExecStart=/srv/mydivesrv
-StandardOutput=append:/srv/mydivesrv.log
-StandardError=append:/srv/mydivesrv.err.log
+ExecStart=/srv/bluefin
+StandardOutput=append:/srv/bluefin.log
+StandardError=append:/srv/bluefin.err.log
 
 [Install]
 WantedBy=multi-user.target
