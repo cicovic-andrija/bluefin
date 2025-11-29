@@ -174,8 +174,8 @@
             display: inline-block;
             padding: 4px 10px;
             margin-left: 8px;
-            background-color: #FFF9C4;
-            color: #003D7A;
+            background-color: #B2F5EA;
+            color: #00796B;
             border-radius: 6px;
             font-weight: bold;
             font-size: 0.9em;
@@ -314,8 +314,8 @@
             <td><b>{{ .Dive.DateTimeInPretty }}</b></td>
         </tr>
         <tr>
-            <td></td>
-            <td>({{ .Dive.Ago }} ago)</td>
+            <td><b>How long ago?</b></td>
+            <td>{{ .Dive.Ago }} ago</td>
         </tr>
         <tr>
             <td><b>Duration</b></td>
@@ -326,8 +326,12 @@
             <td><a href="/hms/sites/{{ .Dive.DiveSiteID }}">🌐 {{ .Dive.DiveSiteName }}</a></td>
         </tr>
         <tr>
+            <td><b>Award</b></td>
+            <td>{{ if .Dive.Award }}<span class="award">🥇 {{ .Dive.Award }}</span>{{ else }}none{{ end }}</td>
+        </tr>
+        <tr>
             <td><b>Rating</b></td>
-            <td>⭐ {{ if .Dive.Rating5 }}{{ .Dive.Rating5 }}/5{{ end }}</td>
+            <td>{{ if .Dive.Rating5 }}⭐ {{ .Dive.Rating5 }}/5{{ else }}{{ end }}</td>
         </tr>
         <tr>
             <td><b>Visibility</b></td>
@@ -404,10 +408,6 @@
         <tr>
             <td><b>Dive computer</b></td>
             <td>{{ .Dive.DCModel }}</td>
-        </tr>
-        <tr>
-            <td><b>Award</b></td>
-            <td>{{ if .Dive.Award }}<span class="award">🥇 {{ .Dive.Award }}</span>{{ else }}none{{ end }}</td>
         </tr>
     </table>
     </div>
