@@ -14,6 +14,18 @@ interface for them. It also offers a data API.
 - 🏆 Award tracking
 - 📱 Responsive design for mobile and desktop clients
 
+## Contents
+
+- [Requirements](#requirements)
+- [Build Bluefin](#build-bluefin)
+- [Run Bluefin](#run-bluefin)
+- [Server Modes](#server-modes)
+- [Configuration](#configuration)
+- [Special Tags](#special-tags)
+- [Build a Docker Image](#build-a-docker-image)
+- [Tools](#tools)
+- [License](#license)
+
 ## Requirements
 
 - Go 1.22 or later
