@@ -101,8 +101,8 @@ Environment variables:
 
 - `DIVELOG_MODE` - Server mode: `dev`, `prod`, or `prod-proxy-http`
 - `DIVELOG_DBFILE_PATH` - Path to Subsurface XML database file
-- `DIVELOG_IP_HOST` - IP address to bind to (default: `127.0.0.1`)
-- `DIVELOG_PORT` - TCP port to listen on (default: `8080`)
+- `DIVELOG_IP_HOST` - IP address to bind
+- `DIVELOG_PORT` - TCP port to listen on
 - `DIVELOG_PRIVATE_KEY_PATH` - Path to TLS private key (required for `prod` mode)
 - `DIVELOG_CERT_PATH` - Path to TLS certificate (required for `prod` mode)
 
