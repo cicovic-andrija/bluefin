@@ -93,7 +93,7 @@ Bluefin supports three server modes:
 
 - **`prod`** - Production mode with TLS. Use when running `bluefin` as a standalone server with direct HTTPS access. Requires TLS certificate and private key.
 
-- **`prod-proxy-http`** - Production mode behind a reverse proxy. Use when `bluefin` runs behind a reverse proxy (like `nginx`) that handles TLS termination. `bluefin` runs on HTTP and listens on localhost, while the proxy handles HTTPS.
+- **`prod-proxy-http`** - Production mode behind a reverse proxy. Use when `bluefin` runs behind a reverse proxy (like `nginx`) that handles TLS termination. `bluefin` runs on HTTP, while the proxy handles HTTPS.
 
 ## Configuration
 
