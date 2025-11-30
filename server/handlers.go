@@ -15,9 +15,12 @@ import (
 const (
 	PathFavicon      = "/favicon.ico"
 	PathProzaLibre   = "/ProzaLibre-Regular.woff2"
-	FileFavicon      = "data/favicon.ico"
-	FileProzaLibre   = "data/ProzaLibre-Regular.woff2"
+	PathStyle        = "/style.css"
+	FileFavicon      = "data" + PathFavicon
+	FileProzaLibre   = "data" + PathProzaLibre
+	FileStyle        = "data" + PathStyle
 	ContentTypeWoff2 = "font/woff2"
+	ContentTypeCSS   = "text/css"
 )
 
 var _pageTemplate = template.Must(template.ParseFiles("data/pagetemplate.html"))
@@ -30,6 +33,9 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 	case PathProzaLibre:
 		filePath = FileProzaLibre
 		contentType = ContentTypeWoff2
+	case PathStyle:
+		filePath = FileStyle
+		contentType = ContentTypeCSS
 	default:
 		http.NotFound(w, r)
 		return

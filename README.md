@@ -1,4 +1,4 @@
-# Bluefin
+# 🐟 Bluefin
 
 A web interface for browsing [Subsurface](https://subsurface-divelog.org/) dive
 log records. Bluefin parses Subsurface XML databases and provides a hypermedia

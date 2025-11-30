@@ -4,233 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="/favicon.ico">
-    <style type="text/css">
-        @font-face {
-            font-family: "ProzaLibre";
-            src: url("/ProzaLibre-Regular.woff2") format("woff2");
-            font-weight: normal;
-            font-style: normal;
-        }
-        html {
-            background-color: #F5F8FC;
-        }
-        body {
-            margin: 0 auto;
-            min-height: 100vh;
-            max-width: 1200px;
-            line-height: 1.6;
-            font-size: 18px;
-            font-family: "ProzaLibre", "Lato", "Arial", "Helvetica", sans-serif;
-            color: #0066CC;
-            background-color: #FFFFFF;
-            padding: 0 20px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
-        }
-        header {
-            margin-bottom: 40px;
-            padding: 20px 0;
-            border-bottom: 2px solid #E6F2FF;
-        }
-        footer {
-            margin-top: 48px;
-            padding: 20px 0;
-            border-top: 2px solid #E6F2FF;
-            line-height: 1.8;
-        }
-        h1 {
-            margin: 0 0 8px 0;
-            line-height: 1.2;
-            color: #003D7A;
-            font-size: 2.5em;
-            font-weight: bold;
-        }
-        h4 {
-            margin: 0 0 8px 0;
-            line-height: 1.2;
-            color: #4A90E2;
-            font-size: 1.1em;
-            font-weight: normal;
-        }
-        h2, h3 {
-            color: #003D7A;
-            margin-top: 32px;
-            margin-bottom: 16px;
-            font-size: 1.5em;
-        }
-        p {
-            line-height: 1.6;
-            margin-bottom: 16px;
-        }
-        a {
-            color: #0066CC;
-            text-decoration: none;
-            transition: color 0.2s ease;
-        }
-        a:hover {
-            color: #4A90E2;
-            text-decoration: underline;
-        }
-        header.nav a {
-            display: inline-block;
-            padding: 8px 12px;
-            margin-right: 8px;
-            background-color: #F0F7FF;
-            border-radius: 8px;
-            text-decoration: none;
-            transition: all 0.2s ease;
-            font-weight: 500;
-            line-height: 28px;
-        }
-        header.nav a:hover {
-            background-color: #E6F2FF;
-            color: #003D7A;
-            text-decoration: none;
-            transform: translateY(-1px);
-        }
-        header.nav .right a {
-            background-color: transparent;
-            padding: 8px 12px;
-        }
-        header.nav .right a:hover {
-            background-color: #F0F7FF;
-        }
-        .dive-card, .site-card {
-            display: block;
-            padding: 16px 20px;
-            margin-bottom: 12px;
-            background-color: #F8FAFF;
-            border-radius: 8px;
-            border: 1px solid #E6F2FF;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            color: #0066CC;
-        }
-        .dive-card:hover, .site-card:hover {
-            background-color: #F0F7FF;
-            border-color: #B3D9FF;
-            box-shadow: 0 2px 8px rgba(0, 102, 204, 0.1);
-            transform: translateY(-2px);
-            text-decoration: none;
-        }
-        .dive-list, .site-list {
-            margin-bottom: 24px;
-        }
-        table {
-            width: 100%;
-            margin-top: 32px;
-            border-collapse: separate;
-            border-spacing: 0;
-            background-color: #FFFFFF;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-        table td {
-            min-width: 120px;
-            padding: 16px 20px;
-            border-bottom: 1px solid #E6F2FF;
-        }
-        table tr:last-child td {
-            border-bottom: none;
-        }
-        table tr:nth-child(even) {
-            background-color: #F8FAFF;
-        }
-        table tr:hover {
-            background-color: #F0F7FF;
-        }
-        .tag {
-            display: inline-block;
-            padding: 4px 12px;
-            margin: 0 4px 8px 0;
-            font-size: small;
-            font-weight: bold;
-            background-color: #0066CC;
-            color: white;
-            border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        .tag-link {
-            display: inline-block;
-            padding: 6px 14px;
-            margin: 0 6px 8px 0;
-            font-size: small;
-            font-weight: bold;
-            background-color: #4A90E2;
-            color: white;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        .tag-link:hover {
-            background-color: #0066CC;
-            color: white;
-            text-decoration: none;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-        }
-        .award {
-            display: inline-block;
-            padding: 4px 10px;
-            margin-left: 8px;
-            background-color: #B2F5EA;
-            color: #00796B;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 0.9em;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        .nav {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            flex-wrap: wrap;
-        }
-        .nav .right {
-            margin-left: auto;
-        }
-        .gh-icon {
-            width: 1em;
-            height: 1em;
-            fill: currentColor;
-            vertical-align: -0.125em;
-        }
-        .section {
-            margin-bottom: 32px;
-        }
-        .map-container {
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            margin: 24px 0;
-        }
-        iframe {
-            display: block;
-        }
-        @media only screen and (max-width: 768px) {
-            body {
-                max-width: 100%;
-                padding: 15px;
-            }
-            h1 {
-                font-size: 2em;
-            }
-            h3 {
-                font-size: 1.3em;
-            }
-            header.nav a {
-                padding: 10px 14px;
-                margin-bottom: 8px;
-            }
-            .dive-card, .site-card {
-                padding: 14px 16px;
-            }
-            table td {
-                padding: 12px 16px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="/style.css">
     <title>{{ .Title }}</title>
 </head>
 <body>
@@ -238,7 +12,6 @@
         <a href="/hms/dives">Dives</a>
         <a href="/hms/sites">Sites</a>
         <a href="/hms/tags">Tags</a>
-        <a href="/hms/about">About</a>
         <div class="right">
 
             <a href="https://github.com/cicovic-andrija/bluefin" target="_blank">
@@ -323,7 +96,7 @@
         </tr>
         <tr>
             <td><b>Dive site</b></td>
-            <td><a href="/hms/sites/{{ .Dive.DiveSiteID }}">🌐 {{ .Dive.DiveSiteName }}</a></td>
+            <td><a class="dive-site-link" href="/hms/sites/{{ .Dive.DiveSiteID }}">🌐 {{ .Dive.DiveSiteName }}</a></td>
         </tr>
         <tr>
             <td><b>Award</b></td>
@@ -459,24 +232,20 @@
     <div class="section">
     <p>
         i wrote a <a href="https://subsurface-divelog.org/" target="_blank">subsurface</a> xml database parser in
-        <a href="https://go.dev/" target="_blank">golang</a> as a fun way of exploring how the standard library parser
-        works, and then decided to build a web server for fetching the dive data and the hypermedia interface for browsing it.
+        <a style="text-decoration: underline;" href="https://go.dev/" target="_blank">go</a> as a fun way of exploring how the standard library parser
+        works, and then decided to build a web server for fetching the dive data and the hypermedia interface for browsing.
     </p>
     <p>
         this site is intended for personal use, but the implementation is open source and can be found by
-        following the <a href="https://github.com/cicovic-andrija/bluefin" target="_blank">code</a> link in the header. i tested the parser and designed the necessary data structures
-        based on my dive log only - there's plenty of room for fixes and extensions.
+        following the link in the header. i tested the parser and designed the data structures
+        based on my dive log only, there's plenty of room for fixes and extensions.
     </p>
     <p>
-        if you do get interested
-        in using the code, please let me know about any bugs you encounter by sending me an <a href="mailto:cicovic.andrija@gmail.com">e-mail</a>.
+        if you get interested in using this, and encounter any bugs, please open an issue on github</a>.
     </p>
     <p>
-        some ideas that i intend to work on: fetch the database directly from subsurface servers (if possible),
+        some ideas that i intend to work on: fetch the database directly from subsurface servers if possible,
         display depth and temperature profiles on dive pages, add a historical view / stats page for aggregation functions etc.
-    </p>
-    <p>
-        happy diving!
     </p>
     </div>
     {{ end }}
@@ -490,7 +259,7 @@
     {{ end }}
     <footer class="nav">
         <a href="#">top</a>⤴
-        <a class="right" href="#">top</a>⤴
+        <a href="/hms/about">about</a>?
     </footer>
 </body>
 </html>
