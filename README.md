@@ -38,6 +38,8 @@ interface for them. It also offers a data API.
 ## Build Bluefin
 
 ```bash
+git clone https://github.com/cicovic-andrija/bluefin.git
+cd bluefin
 go build -o bluefin main.go
 ```
 
