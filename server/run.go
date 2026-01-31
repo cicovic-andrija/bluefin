@@ -9,16 +9,16 @@ import (
 var _control_block control
 
 func Run() {
-	trace(_control, "main: start: %s v1.2", filepath.Base(os.Args[0]))
+	trace(_control, "main: start: %s v1.3", filepath.Base(os.Args[0]))
 	readEnvironment()
-	buildDatabase()
+	runAndWaitForBuilder()
 	_control_block.boot()
 }
 
 func readEnvironment() {
 	const (
 		modeEnvVar        = "DIVELOG_MODE"
-		dbPathEnvVar      = "DIVELOG_DBFILE_PATH"
+		watchDirEnvVar    = "DIVELOG_WATCH_DIR_PATH"
 		ipHostEnvVar      = "DIVELOG_IP_HOST"
 		portEnvVar        = "DIVELOG_PORT"
 		privateKeyPathVar = "DIVELOG_PRIVATE_KEY_PATH"
@@ -84,10 +84,10 @@ func readEnvironment() {
 		os.Exit(1)
 	}
 
-	bluefin.Metadata.Source = os.Getenv(dbPathEnvVar)
-	trace(_env, "%s = %q", dbPathEnvVar, bluefin.Metadata.Source)
-	if bluefin.Metadata.Source == "" {
-		trace(_error, "%s is empty or undefined", dbPathEnvVar)
+	_control_block.watchDirectoryPath = os.Getenv(watchDirEnvVar)
+	trace(_env, "%s = %q", watchDirEnvVar, _control_block.watchDirectoryPath)
+	if _control_block.watchDirectoryPath == "" {
+		trace(_error, "%s is empty or undefined", watchDirEnvVar)
 		os.Exit(1)
 	}
 }

@@ -20,12 +20,13 @@ type control struct {
 	closed         bool
 	failure        chan error
 
-	https             *http.Server
-	endpoint          string
-	encryptionKeyPath string
-	publicCertPath    string
-	encryptedTraffic  bool
-	localAPI          bool
+	https              *http.Server
+	endpoint           string
+	encryptionKeyPath  string
+	publicCertPath     string
+	watchDirectoryPath string
+	encryptedTraffic   bool
+	localAPI           bool
 }
 
 func (c *control) boot() {
@@ -108,10 +109,11 @@ func (c *control) assertRunning() {
 	}
 }
 
+// DEVNOTE: Do not use from the main control thread.
+// DEVNOTE: Make sure errMsg contains stack trace, or at least caller details.
 func assert(condition bool, errMsg string) {
 	if !condition {
 		trace(_control, "assertion failed, sending failure signal to main...")
-		// DEVNOTE: make sure errMsg contains stack trace, or at least caller details
 		_control_block.signalFailure(errors.New(errMsg))
 	}
 }

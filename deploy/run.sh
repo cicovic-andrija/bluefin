@@ -8,7 +8,7 @@ msg() {
   echo "------------------------------------------------------"
 }
 
-export DIVELOG_DBFILE_PATH="${DIVELOG_LOCAL_BACKUP_DIR}/subsurface-2025-12.xml"
+export DIVELOG_WATCH_DIR_PATH="${DIVELOG_LOCAL_BACKUP_DIR}"
 export DIVELOG_MODE=dev
 
 msg "Dumping local env state ..."

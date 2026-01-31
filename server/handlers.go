@@ -62,13 +62,14 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 
 func fetchSites(w http.ResponseWriter, r *http.Request) {
 	var (
-		resp []byte
-		err  error
+		divelog = acquireDataAccess()
+		resp    []byte
+		err     error
 	)
 
 	if r.URL.Query().Get("headonly") == "true" {
-		heads := make([]*SiteHead, 0, len(bluefin.DiveSites))
-		for _, site := range bluefin.DiveSites[1:] {
+		heads := make([]*SiteHead, 0, len(divelog.DiveSites))
+		for _, site := range divelog.DiveSites[1:] {
 			heads = append(heads, &SiteHead{
 				ID:   site.ID,
 				Name: site.Name,
@@ -80,8 +81,8 @@ func fetchSites(w http.ResponseWriter, r *http.Request) {
 		resp, err = json.Marshal(heads)
 	} else {
 		sites := []*SiteFull{}
-		for _, site := range bluefin.DiveSites[1:] {
-			sites = append(sites, NewSiteFull(site, bluefin.Dives[1:]))
+		for _, site := range divelog.DiveSites[1:] {
+			sites = append(sites, NewSiteFull(site, divelog.Dives[1:]))
 		}
 		resp, err = json.Marshal(sites)
 	}
@@ -96,14 +97,16 @@ func fetchSites(w http.ResponseWriter, r *http.Request) {
 }
 
 func fetchSite(w http.ResponseWriter, r *http.Request) {
-	siteID := utils.ConvertAndCheckID(r.PathValue("id"), bluefin.LargestSiteID())
+	divelog := acquireDataAccess()
+
+	siteID := utils.ConvertAndCheckID(r.PathValue("id"), divelog.LargestSiteID())
 	if siteID == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	site := bluefin.DiveSites[siteID]
+	site := divelog.DiveSites[siteID]
 
-	resp, err := json.Marshal(NewSiteFull(site, bluefin.Dives[1:]))
+	resp, err := json.Marshal(NewSiteFull(site, divelog.Dives[1:]))
 	if err != nil {
 		trace(_error, "http: failed to marshal single dive site data: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -114,28 +117,30 @@ func fetchSite(w http.ResponseWriter, r *http.Request) {
 }
 
 func fetchTrips(w http.ResponseWriter, r *http.Request) {
-	trips := make([]*Trip, 0, len(bluefin.DiveTrips))
+	divelog := acquireDataAccess()
+
+	trips := make([]*Trip, 0, len(divelog.DiveTrips))
 	reverse := r.URL.Query().Get("reverse") == "true"
 	if reverse {
-		for _, trip := range bluefin.DiveTrips[1:] {
+		for _, trip := range divelog.DiveTrips[1:] {
 			trips = append(trips, &Trip{
 				ID:    trip.ID,
 				Label: trip.Label,
 			})
 		}
 	} else {
-		for i := len(bluefin.DiveTrips) - 1; i > 0; i-- {
+		for i := len(divelog.DiveTrips) - 1; i > 0; i-- {
 			trips = append(trips, &Trip{
-				ID:    bluefin.DiveTrips[i].ID,
-				Label: bluefin.DiveTrips[i].Label,
+				ID:    divelog.DiveTrips[i].ID,
+				Label: divelog.DiveTrips[i].Label,
 			})
 		}
 	}
 
 	for _, trip := range trips {
-		for _, dive := range bluefin.Dives[1:] {
+		for _, dive := range divelog.Dives[1:] {
 			if dive.DiveTripID == trip.ID {
-				trip.LinkedDives = append(trip.LinkedDives, NewDiveHead(dive, bluefin.DiveSites[dive.DiveSiteID]))
+				trip.LinkedDives = append(trip.LinkedDives, NewDiveHead(dive, divelog.DiveSites[dive.DiveSiteID]))
 			}
 		}
 		if !reverse {
@@ -155,22 +160,23 @@ func fetchTrips(w http.ResponseWriter, r *http.Request) {
 
 func fetchDives(w http.ResponseWriter, r *http.Request) {
 	var (
-		resp []byte
-		err  error
-		tag  = r.URL.Query().Get("tag")
+		divelog = acquireDataAccess()
+		resp    []byte
+		err     error
+		tag     = r.URL.Query().Get("tag")
 	)
 
 	if r.URL.Query().Get("headonly") == "true" {
-		heads := make([]*DiveHead, 0, len(bluefin.Dives))
-		for _, dive := range bluefin.Dives[1:] {
-			heads = append(heads, NewDiveHead(dive, bluefin.DiveSites[dive.DiveSiteID]))
+		heads := make([]*DiveHead, 0, len(divelog.Dives))
+		for _, dive := range divelog.Dives[1:] {
+			heads = append(heads, NewDiveHead(dive, divelog.DiveSites[dive.DiveSiteID]))
 		}
 		resp, err = json.Marshal(heads)
 	} else {
 		dives := []*DiveFull{}
-		for _, dive := range bluefin.Dives[1:] {
+		for _, dive := range divelog.Dives[1:] {
 			if dive.IsTaggedWith(tag) {
-				dives = append(dives, NewDiveFull(dive, bluefin.DiveSites[dive.DiveSiteID]))
+				dives = append(dives, NewDiveFull(dive, divelog.DiveSites[dive.DiveSiteID]))
 			}
 		}
 		resp, err = json.Marshal(dives)
@@ -186,14 +192,16 @@ func fetchDives(w http.ResponseWriter, r *http.Request) {
 }
 
 func fetchDive(w http.ResponseWriter, r *http.Request) {
-	diveID := utils.ConvertAndCheckID(r.PathValue("id"), bluefin.LargestDiveID())
+	divelog := acquireDataAccess()
+
+	diveID := utils.ConvertAndCheckID(r.PathValue("id"), divelog.LargestDiveID())
 	if diveID == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	dive := bluefin.Dives[diveID]
+	dive := divelog.Dives[diveID]
 
-	resp, err := json.Marshal(NewDiveFull(dive, bluefin.DiveSites[dive.DiveSiteID]))
+	resp, err := json.Marshal(NewDiveFull(dive, divelog.DiveSites[dive.DiveSiteID]))
 	if err != nil {
 		trace(_error, "http: failed to marshal single dive data: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -204,8 +212,10 @@ func fetchDive(w http.ResponseWriter, r *http.Request) {
 }
 
 func fetchTags(w http.ResponseWriter, r *http.Request) {
+	divelog := acquireDataAccess()
+
 	tags := make(map[string]int)
-	for _, dive := range bluefin.Dives[1:] {
+	for _, dive := range divelog.Dives[1:] {
 		for _, tag := range dive.Tags {
 			tags[tag]++
 		}
@@ -221,20 +231,22 @@ func fetchTags(w http.ResponseWriter, r *http.Request) {
 	send(w, resp)
 }
 
+// TODO: This function can be refactored to be similar to renderSites.
 func renderDives(w http.ResponseWriter, r *http.Request) {
-	// TODO: This function can be refactored to be similar to renderSites.
-	trips := make([]*Trip, 0, len(bluefin.DiveTrips))
-	for i := len(bluefin.DiveTrips) - 1; i > 0; i-- {
+	divelog := acquireDataAccess()
+
+	trips := make([]*Trip, 0, len(divelog.DiveTrips))
+	for i := len(divelog.DiveTrips) - 1; i > 0; i-- {
 		trip := &Trip{
 			ID:    i,
-			Label: bluefin.DiveTrips[i].Label,
+			Label: divelog.DiveTrips[i].Label,
 		}
-		for i := len(bluefin.Dives) - 1; i > 0; i-- {
-			dive := bluefin.Dives[i]
+		for i := len(divelog.Dives) - 1; i > 0; i-- {
+			dive := divelog.Dives[i]
 			if dive.DiveTripID == trip.ID {
 				trip.LinkedDives = append(
 					trip.LinkedDives,
-					NewDiveHead(dive, bluefin.DiveSites[dive.DiveSiteID]),
+					NewDiveHead(dive, divelog.DiveSites[dive.DiveSiteID]),
 				)
 			}
 		}
@@ -249,8 +261,10 @@ func renderDives(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderSites(w http.ResponseWriter, r *http.Request) {
+	divelog := acquireDataAccess()
+
 	regionMap := make(map[string][]*SiteHead)
-	for _, site := range bluefin.DiveSites[1:] {
+	for _, site := range divelog.DiveSites[1:] {
 		regionMap[site.Region] = append(regionMap[site.Region], &SiteHead{
 			ID:   site.ID,
 			Name: site.Name,
@@ -280,13 +294,15 @@ func renderSites(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderDive(w http.ResponseWriter, r *http.Request) {
-	diveID := utils.ConvertAndCheckID(r.PathValue("id"), bluefin.LargestDiveID())
+	divelog := acquireDataAccess()
+
+	diveID := utils.ConvertAndCheckID(r.PathValue("id"), divelog.LargestDiveID())
 	if diveID == 0 {
 		renderNotFound(w, "dive not found")
 		return
 	}
-	dive := bluefin.Dives[diveID]
-	site := bluefin.DiveSites[dive.DiveSiteID]
+	dive := divelog.Dives[diveID]
+	site := divelog.DiveSites[dive.DiveSiteID]
 
 	page := Page{
 		Title:      site.Name,
@@ -295,7 +311,7 @@ func renderDive(w http.ResponseWriter, r *http.Request) {
 	}
 	// fix it here because this is the only scenario where it's needed
 	// (although it's not a good design)
-	if page.Dive.NextID == len(bluefin.Dives) {
+	if page.Dive.NextID == len(divelog.Dives) {
 		page.Dive.NextID = 0
 	}
 
@@ -303,23 +319,27 @@ func renderDive(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderSite(w http.ResponseWriter, r *http.Request) {
-	siteID := utils.ConvertAndCheckID(r.PathValue("id"), bluefin.LargestSiteID())
+	divelog := acquireDataAccess()
+
+	siteID := utils.ConvertAndCheckID(r.PathValue("id"), divelog.LargestSiteID())
 	if siteID == 0 {
 		renderNotFound(w, "site not found")
 		return
 	}
-	site := bluefin.DiveSites[siteID]
+	site := divelog.DiveSites[siteID]
 
 	renderTemplate(w, Page{
 		Title:      site.Name,
 		Supertitle: site.Region,
-		Site:       NewSiteFull(site, bluefin.Dives[1:]),
+		Site:       NewSiteFull(site, divelog.Dives[1:]),
 	})
 }
 
 func renderTags(w http.ResponseWriter, r *http.Request) {
+	divelog := acquireDataAccess()
+
 	tags := make(map[string]int)
-	for _, dive := range bluefin.Dives[1:] {
+	for _, dive := range divelog.Dives[1:] {
 		for _, tag := range dive.Tags {
 			tags[tag]++
 		}
@@ -333,15 +353,17 @@ func renderTags(w http.ResponseWriter, r *http.Request) {
 }
 
 func renderTaggedDives(w http.ResponseWriter, r *http.Request) {
+	divelog := acquireDataAccess()
+
 	tag := r.PathValue("tag")
 	dives := []*DiveHead{}
-	for i := len(bluefin.Dives) - 1; i > 0; i-- {
-		dive := bluefin.Dives[i]
+	for i := len(divelog.Dives) - 1; i > 0; i-- {
+		dive := divelog.Dives[i]
 		for _, t := range dive.Tags {
 			if t == tag {
 				dives = append(
 					dives,
-					NewDiveHead(dive, bluefin.DiveSites[dive.DiveSiteID]),
+					NewDiveHead(dive, divelog.DiveSites[dive.DiveSiteID]),
 				)
 			}
 		}

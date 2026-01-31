@@ -49,7 +49,7 @@ go build -o bluefin main.go
 
 ```bash
 DIVELOG_MODE="dev" \
-DIVELOG_DBFILE_PATH="/path/to/subsurfacedata.xml" \
+DIVELOG_WATCH_DIR_PATH="/path/to/dir" \
 go run ./main.go
 ```
 
@@ -57,7 +57,7 @@ go run ./main.go
 
 ```bash
 DIVELOG_MODE="prod" \
-DIVELOG_DBFILE_PATH="/path/to/subsurfacedata.xml" \
+DIVELOG_WATCH_DIR_PATH="/path/to/dir" \
 DIVELOG_IP_HOST="0.0.0.0" \
 DIVELOG_PORT="443" \
 DIVELOG_PRIVATE_KEY_PATH="/path/to/privkey" \
@@ -69,7 +69,7 @@ DIVELOG_CERT_PATH="/path/to/pubcert" \
 
 ```bash
 DIVELOG_MODE="prod-proxy-http" \
-DIVELOG_DBFILE_PATH="/path/to/subsurfacedata.xml" \
+DIVELOG_WATCH_DIR_PATH="/path/to/dir" \
 DIVELOG_IP_HOST="127.0.0.1" \
 DIVELOG_PORT="52000" \
 ./bluefin
@@ -100,7 +100,7 @@ Bluefin supports three server modes:
 Environment variables:
 
 - `DIVELOG_MODE` - Server mode: `dev`, `prod`, or `prod-proxy-http`
-- `DIVELOG_DBFILE_PATH` - Path to Subsurface XML database file
+- `DIVELOG_WATCH_DIR_PATH` - Path to the directory with Subsurface XML files
 - `DIVELOG_IP_HOST` - IP address to bind
 - `DIVELOG_PORT` - TCP port to listen on
 - `DIVELOG_PRIVATE_KEY_PATH` - Path to TLS private key (required for `prod` mode)
@@ -154,9 +154,9 @@ The Dockerfile uses a multi-stage build:
 - Results in a small, secure container image
 
 **Note:** The Dockerfile hardcodes the following environment variables:
-- `DIVELOG_MODE=prod-proxy-http`
-- `DIVELOG_DBFILE_PATH=/srv/store/subsurfacedata.xml`
-- `DIVELOG_IP_HOST=0.0.0.0`
+- `DIVELOG_MODE`
+- `DIVELOG_WATCH_DIR_PATH`
+- `DIVELOG_IP_HOST`
 
 These can be overridden at runtime using `-e` flags if needed.
 

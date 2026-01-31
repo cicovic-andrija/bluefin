@@ -1,9 +1,12 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -11,18 +14,85 @@ import (
 	"src.acicovic.me/divelog/subsurface"
 )
 
-var bluefin DiveLog
+// Only one thread at a time (builder) will ever access this pointer,
+// so there is no need to guard it (to keep things simple for now).
+var _divelog *DiveLog
 
-func buildDatabase() {
-	file, err := os.Open(bluefin.Metadata.Source)
+func runAndWaitForBuilder() {
+	errChannel := make(chan error)
+	go builder(errChannel)
+
+	select {
+	case err := <-errChannel:
+		if err != nil {
+			panic(err)
+		}
+	case <-time.After(30 * time.Second):
+		panic(errors.New("database initialization timed out"))
+	}
+
+	trace(_control, "mandatory database initialization on boot completed")
+}
+
+func builder(firstRun chan error) {
+	var once sync.Once
+
+	for {
+		err := buildFromLatestDataFile()
+
+		once.Do(func() {
+			firstRun <- err
+		})
+
+		if err != nil {
+			trace(_error, "database build failed: %v", err)
+		}
+
+		time.Sleep(time.Minute)
+	}
+}
+
+func buildFromLatestDataFile() error {
+	filePath, modTime, err := findLatestDataFile()
 	if err != nil {
-		panic(fmt.Errorf("failed to open file %s: %v", bluefin.Metadata.Source, err))
+		return err
+	}
+
+	latestBuild := acquireDataAccess()
+	if latestBuild == nil || modTime.After(latestBuild.Metadata.modTime) {
+		_divelog = &DiveLog{}
+		_divelog.Metadata.Source = filePath
+		_divelog.Metadata.modTime = modTime
+		_divelog.Metadata.ModificationTime = modTime.Format(time.RFC3339)
+	} else {
+		trace(_build, "builder found no newer data files, waiting for next iteration...")
+		return nil
+	}
+
+	trace(_build, "database build started, from source file %s", filePath)
+	if err := buildDatabase(); err != nil {
+		return err
+	}
+
+	swapLatestData(_divelog)
+
+	trace(_build, "database build completed with modification time %s", modTime)
+	return nil
+}
+
+func buildDatabase() error {
+	path := _divelog.Metadata.Source
+	file, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("failed to open file %s: %v", path, err)
 	}
 	defer file.Close()
 
 	if err = subsurface.DecodeSubsurfaceDatabase(file, &SubsurfaceCallbackHandler{}); err != nil {
-		panic(fmt.Errorf("failed to decode database in %s: %v", bluefin.Metadata.Source, err))
+		return fmt.Errorf("failed to decode database in %s: %v", path, err)
 	}
+
+	return nil
 }
 
 type SubsurfaceCallbackHandler struct {
@@ -32,10 +102,10 @@ type SubsurfaceCallbackHandler struct {
 }
 
 func (p *SubsurfaceCallbackHandler) HandleBegin() {
-	bluefin.DiveSites = make([]*DiveSite, 1, 100)
-	bluefin.DiveTrips = make([]*DiveTrip, 1, 100)
-	bluefin.Dives = make([]*Dive, 1, 100)
-	bluefin.sourceToSystemID = make(map[string]int)
+	_divelog.DiveSites = make([]*DiveSite, 1, 100)
+	_divelog.DiveTrips = make([]*DiveTrip, 1, 100)
+	_divelog.Dives = make([]*Dive, 1, 100)
+	_divelog.sourceToSystemID = make(map[string]int)
 }
 
 func (p *SubsurfaceCallbackHandler) HandleDive(ddh subsurface.DiveDataHolder) int {
@@ -80,24 +150,24 @@ func (p *SubsurfaceCallbackHandler) HandleDive(ddh subsurface.DiveDataHolder) in
 		datetime: ddh.DateTime,
 	}
 	trace(_build, "%v", dive)
-	assert(dive.ID == len(bluefin.Dives), "invalid Dive.ID")
+	assert(dive.ID == len(_divelog.Dives), "invalid Dive.ID")
 
-	siteID, ok := bluefin.sourceToSystemID[ddh.DiveSiteUUID]
+	siteID, ok := _divelog.sourceToSystemID[ddh.DiveSiteUUID]
 	assert(ok, "DiveDataHolder.DiveSiteUUID is not mapped to DiveSite.ID")
 	dive.DiveSiteID = siteID
-	assert(siteID > 0 && siteID < len(bluefin.DiveSites), "invalid dive site ID mapping")
-	assert(bluefin.DiveSites[siteID] != nil, "DiveSite ptr is nil")
-	trace(_link, "%v -> %v", dive, bluefin.DiveSites[siteID])
+	assert(siteID > 0 && siteID < len(_divelog.DiveSites), "invalid dive site ID mapping")
+	assert(_divelog.DiveSites[siteID] != nil, "DiveSite ptr is nil")
+	trace(_link, "%v -> %v", dive, _divelog.DiveSites[siteID])
 
 	dive.DiveTripID = ddh.DiveTripID
-	assert(ddh.DiveTripID > 0 && ddh.DiveTripID < len(bluefin.DiveTrips), "invalid dive trip ID")
-	assert(bluefin.DiveTrips[ddh.DiveTripID] != nil, "DiveTrip ptr is nil")
-	trace(_link, "%v -> %v", dive, bluefin.DiveTrips[ddh.DiveTripID])
+	assert(ddh.DiveTripID > 0 && ddh.DiveTripID < len(_divelog.DiveTrips), "invalid dive trip ID")
+	assert(_divelog.DiveTrips[ddh.DiveTripID] != nil, "DiveTrip ptr is nil")
+	trace(_link, "%v -> %v", dive, _divelog.DiveTrips[ddh.DiveTripID])
 
 	dive.ProcessSpecialTags(specialTags)
 	dive.Normalize()
 
-	bluefin.Dives = append(bluefin.Dives, dive)
+	_divelog.Dives = append(_divelog.Dives, dive)
 	p.lastDiveID++
 
 	return dive.ID
@@ -138,12 +208,12 @@ func (p *SubsurfaceCallbackHandler) HandleDiveSite(uuid string, name string, coo
 		sourceID: uuid,
 	}
 	trace(_build, "%v", site)
-	assert(site.ID == len(bluefin.DiveSites), "invalid DiveSite.ID")
+	assert(site.ID == len(_divelog.DiveSites), "invalid DiveSite.ID")
 
-	bluefin.sourceToSystemID[site.sourceID] = site.ID
+	_divelog.sourceToSystemID[site.sourceID] = site.ID
 	trace(_map, "sourceToSystemID %q -> %d", site.sourceID, site.ID)
 
-	bluefin.DiveSites = append(bluefin.DiveSites, site)
+	_divelog.DiveSites = append(_divelog.DiveSites, site)
 	p.lastSiteID++
 
 	return site.ID
@@ -155,23 +225,23 @@ func (p *SubsurfaceCallbackHandler) HandleDiveTrip(label string) int {
 		Label: label,
 	}
 	trace(_build, "%v", trip)
-	assert(trip.ID == len(bluefin.DiveTrips), "invalid DiveTrip.ID")
+	assert(trip.ID == len(_divelog.DiveTrips), "invalid DiveTrip.ID")
 
-	bluefin.DiveTrips = append(bluefin.DiveTrips, trip)
+	_divelog.DiveTrips = append(_divelog.DiveTrips, trip)
 	p.lastTripID++
 
 	return trip.ID
 }
 
 func (p *SubsurfaceCallbackHandler) HandleEnd() {
-	assert(len(bluefin.Dives)-1 == p.lastDiveID, "invalid Dives slice length")
-	assert(len(bluefin.DiveSites)-1 == p.lastSiteID, "invalid DiveSites slice length")
-	assert(len(bluefin.DiveTrips)-1 == p.lastTripID, "invalid DiveTrips slice length")
+	assert(len(_divelog.Dives)-1 == p.lastDiveID, "invalid Dives slice length")
+	assert(len(_divelog.DiveSites)-1 == p.lastSiteID, "invalid DiveSites slice length")
+	assert(len(_divelog.DiveTrips)-1 == p.lastTripID, "invalid DiveTrips slice length")
 }
 
 func (p *SubsurfaceCallbackHandler) HandleGeoData(siteID int, cat int, label string) {
-	assert(bluefin.DiveSites[siteID] != nil, "DiveSite ptr is nil")
-	site := bluefin.DiveSites[siteID]
+	assert(_divelog.DiveSites[siteID] != nil, "DiveSite ptr is nil")
+	site := _divelog.DiveSites[siteID]
 	for _, lbl := range site.GeoLabels {
 		if lbl == label {
 			return
@@ -181,11 +251,52 @@ func (p *SubsurfaceCallbackHandler) HandleGeoData(siteID int, cat int, label str
 }
 
 func (p *SubsurfaceCallbackHandler) HandleHeader(program string, version string) {
-	bluefin.Metadata.Program = program
-	bluefin.Metadata.ProgramVersion = version
-	bluefin.Metadata.Units = "metric" // DEVNOTE: make configurable?
+	_divelog.Metadata.Program = program
+	_divelog.Metadata.ProgramVersion = version
+	_divelog.Metadata.Units = "metric"
 }
 
 func (p *SubsurfaceCallbackHandler) HandleSkip(element string) {
 	// do nothing
+}
+
+func findLatestDataFile() (path string, mt time.Time, err error) {
+	directoryPath := _control_block.watchDirectoryPath
+	entries, err := os.ReadDir(directoryPath)
+	if err != nil {
+		return
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+
+		name := entry.Name()
+		if !strings.HasPrefix(name, SubsurfaceDataFilePrefix) {
+			continue
+		}
+
+		info, infoErr := entry.Info()
+		if infoErr != nil {
+			err = infoErr
+			return
+		}
+
+		modTime := info.ModTime()
+		if path == "" || modTime.After(mt) {
+			mt = modTime
+			path = filepath.Join(directoryPath, name)
+		}
+	}
+
+	if path == "" {
+		err = fmt.Errorf(
+			"no files with prefix %q found in %s",
+			SubsurfaceDataFilePrefix,
+			directoryPath,
+		)
+	}
+
+	return
 }
