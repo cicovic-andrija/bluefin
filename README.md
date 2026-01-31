@@ -142,7 +142,7 @@ Special tags are not displayed as regular tags but are processed to set dive pro
 
 ## Build a Docker Image
 
-Build a Docker image using the provided [`Dockerfile`](Dockerfile):
+Build a Docker image using the provided [`Dockerfile`](deploy/Dockerfile):
 
 ```bash
 docker build -t bluefin:latest .
