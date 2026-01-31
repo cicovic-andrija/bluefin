@@ -112,6 +112,6 @@ func assert(condition bool, errMsg string) {
 	if !condition {
 		trace(_control, "assertion failed, sending failure signal to main...")
 		// DEVNOTE: make sure errMsg contains stack trace, or at least caller details
-		_serverControl.signalFailure(errors.New(errMsg))
+		_control_block.signalFailure(errors.New(errMsg))
 	}
 }

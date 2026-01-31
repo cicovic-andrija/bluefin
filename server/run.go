@@ -6,13 +6,13 @@ import (
 	"strconv"
 )
 
-var _serverControl control
+var _control_block control
 
 func Run() {
 	trace(_control, "main: start: %s v1.2", filepath.Base(os.Args[0]))
 	readEnvironment()
 	buildDatabase()
-	_serverControl.boot()
+	_control_block.boot()
 }
 
 func readEnvironment() {
@@ -32,10 +32,10 @@ func readEnvironment() {
 	}
 
 	if mode == "dev" {
-		_serverControl.localAPI = true
-		_serverControl.encryptedTraffic = false
-		_serverControl.endpoint = "localhost:8072"
-		trace(_control, "in mode %q (HTTP): endpoint will be http://%s", mode, _serverControl.endpoint)
+		_control_block.localAPI = true
+		_control_block.encryptedTraffic = false
+		_control_block.endpoint = "localhost:8072"
+		trace(_control, "in mode %q (HTTP): endpoint will be http://%s", mode, _control_block.endpoint)
 	} else if mode == "prod" || mode == "prod-proxy-http" {
 		ipHost := os.Getenv(ipHostEnvVar)
 		trace(_env, "%s = %q", ipHostEnvVar, ipHost)
@@ -55,7 +55,7 @@ func readEnvironment() {
 			}
 		}
 
-		_serverControl.endpoint = ipHost + ":" + port
+		_control_block.endpoint = ipHost + ":" + port
 
 		if mode == "prod" {
 			privateKeyPath := os.Getenv(privateKeyPathVar)
@@ -72,12 +72,12 @@ func readEnvironment() {
 				os.Exit(1)
 			}
 
-			_serverControl.encryptionKeyPath = privateKeyPath
-			_serverControl.publicCertPath = certPath
-			_serverControl.encryptedTraffic = true
-			trace(_control, "in mode %q (HTTPS): endpoint will be https://%s", mode, _serverControl.endpoint)
+			_control_block.encryptionKeyPath = privateKeyPath
+			_control_block.publicCertPath = certPath
+			_control_block.encryptedTraffic = true
+			trace(_control, "in mode %q (HTTPS): endpoint will be https://%s", mode, _control_block.endpoint)
 		} else {
-			trace(_control, "in mode %q (HTTP): endpoint will be http://%s", mode, _serverControl.endpoint)
+			trace(_control, "in mode %q (HTTP): endpoint will be http://%s", mode, _control_block.endpoint)
 		}
 	} else {
 		trace(_error, "value of %s is invalid", modeEnvVar)

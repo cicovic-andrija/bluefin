@@ -23,7 +23,7 @@ const (
 	ContentTypeCSS   = "text/css"
 )
 
-var _pageTemplate = template.Must(template.ParseFiles("data/pagetemplate.html"))
+var _page_template = template.Must(template.ParseFiles("data/pagetemplate.html"))
 
 func defaultHandler(w http.ResponseWriter, r *http.Request) {
 	var filePath, contentType string
@@ -453,7 +453,7 @@ func multiplexer() http.Handler {
 	trace(_https, "handler registered for /{$}")
 
 	// local API handlers
-	if _serverControl.localAPI {
+	if _control_block.localAPI {
 		mux.HandleFunc("GET /data/0", fetchAll)
 		trace(_https, "handler registered for /data/0")
 
@@ -481,7 +481,7 @@ func renderTemplate(w http.ResponseWriter, p Page) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if err := _pageTemplate.Execute(w, p); err != nil {
+	if err := _page_template.Execute(w, p); err != nil {
 		trace(_error, "http: render template: %v", err)
 	}
 }
