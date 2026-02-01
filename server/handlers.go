@@ -60,11 +60,10 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeContent(w, r, r.URL.Path[1:], fi.ModTime(), file)
 }
 
-func fetchSites(w http.ResponseWriter, r *http.Request) {
+func fetchSites(w http.ResponseWriter, r *http.Request, divelog *DiveLog) {
 	var (
-		divelog = acquireDataAccess()
-		resp    []byte
-		err     error
+		resp []byte
+		err  error
 	)
 
 	if r.URL.Query().Get("headonly") == "true" {
@@ -96,9 +95,7 @@ func fetchSites(w http.ResponseWriter, r *http.Request) {
 	send(w, resp)
 }
 
-func fetchSite(w http.ResponseWriter, r *http.Request) {
-	divelog := acquireDataAccess()
-
+func fetchSite(w http.ResponseWriter, r *http.Request, divelog *DiveLog) {
 	siteID := utils.ConvertAndCheckID(r.PathValue("id"), divelog.LargestSiteID())
 	if siteID == 0 {
 		w.WriteHeader(http.StatusBadRequest)
@@ -116,9 +113,7 @@ func fetchSite(w http.ResponseWriter, r *http.Request) {
 	send(w, resp)
 }
 
-func fetchTrips(w http.ResponseWriter, r *http.Request) {
-	divelog := acquireDataAccess()
-
+func fetchTrips(w http.ResponseWriter, r *http.Request, divelog *DiveLog) {
 	trips := make([]*Trip, 0, len(divelog.DiveTrips))
 	reverse := r.URL.Query().Get("reverse") == "true"
 	if reverse {
@@ -158,12 +153,11 @@ func fetchTrips(w http.ResponseWriter, r *http.Request) {
 	send(w, resp)
 }
 
-func fetchDives(w http.ResponseWriter, r *http.Request) {
+func fetchDives(w http.ResponseWriter, r *http.Request, divelog *DiveLog) {
 	var (
-		divelog = acquireDataAccess()
-		resp    []byte
-		err     error
-		tag     = r.URL.Query().Get("tag")
+		resp []byte
+		err  error
+		tag  = r.URL.Query().Get("tag")
 	)
 
 	if r.URL.Query().Get("headonly") == "true" {
@@ -191,9 +185,7 @@ func fetchDives(w http.ResponseWriter, r *http.Request) {
 	send(w, resp)
 }
 
-func fetchDive(w http.ResponseWriter, r *http.Request) {
-	divelog := acquireDataAccess()
-
+func fetchDive(w http.ResponseWriter, r *http.Request, divelog *DiveLog) {
 	diveID := utils.ConvertAndCheckID(r.PathValue("id"), divelog.LargestDiveID())
 	if diveID == 0 {
 		w.WriteHeader(http.StatusBadRequest)
@@ -211,9 +203,7 @@ func fetchDive(w http.ResponseWriter, r *http.Request) {
 	send(w, resp)
 }
 
-func fetchTags(w http.ResponseWriter, r *http.Request) {
-	divelog := acquireDataAccess()
-
+func fetchTags(w http.ResponseWriter, r *http.Request, divelog *DiveLog) {
 	tags := make(map[string]int)
 	for _, dive := range divelog.Dives[1:] {
 		for _, tag := range dive.Tags {
@@ -232,9 +222,7 @@ func fetchTags(w http.ResponseWriter, r *http.Request) {
 }
 
 // TODO: This function can be refactored to be similar to renderSites.
-func renderDives(w http.ResponseWriter, r *http.Request) {
-	divelog := acquireDataAccess()
-
+func renderDives(w http.ResponseWriter, r *http.Request, divelog *DiveLog) {
 	trips := make([]*Trip, 0, len(divelog.DiveTrips))
 	for i := len(divelog.DiveTrips) - 1; i > 0; i-- {
 		trip := &Trip{
@@ -260,9 +248,7 @@ func renderDives(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func renderSites(w http.ResponseWriter, r *http.Request) {
-	divelog := acquireDataAccess()
-
+func renderSites(w http.ResponseWriter, r *http.Request, divelog *DiveLog) {
 	regionMap := make(map[string][]*SiteHead)
 	for _, site := range divelog.DiveSites[1:] {
 		regionMap[site.Region] = append(regionMap[site.Region], &SiteHead{
@@ -293,9 +279,7 @@ func renderSites(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func renderDive(w http.ResponseWriter, r *http.Request) {
-	divelog := acquireDataAccess()
-
+func renderDive(w http.ResponseWriter, r *http.Request, divelog *DiveLog) {
 	diveID := utils.ConvertAndCheckID(r.PathValue("id"), divelog.LargestDiveID())
 	if diveID == 0 {
 		renderNotFound(w, "dive not found")
@@ -318,9 +302,7 @@ func renderDive(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, page)
 }
 
-func renderSite(w http.ResponseWriter, r *http.Request) {
-	divelog := acquireDataAccess()
-
+func renderSite(w http.ResponseWriter, r *http.Request, divelog *DiveLog) {
 	siteID := utils.ConvertAndCheckID(r.PathValue("id"), divelog.LargestSiteID())
 	if siteID == 0 {
 		renderNotFound(w, "site not found")
@@ -335,9 +317,7 @@ func renderSite(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func renderTags(w http.ResponseWriter, r *http.Request) {
-	divelog := acquireDataAccess()
-
+func renderTags(w http.ResponseWriter, r *http.Request, divelog *DiveLog) {
 	tags := make(map[string]int)
 	for _, dive := range divelog.Dives[1:] {
 		for _, tag := range dive.Tags {
@@ -352,9 +332,7 @@ func renderTags(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func renderTaggedDives(w http.ResponseWriter, r *http.Request) {
-	divelog := acquireDataAccess()
-
+func renderTaggedDives(w http.ResponseWriter, r *http.Request, divelog *DiveLog) {
 	tag := r.PathValue("tag")
 	dives := []*DiveHead{}
 	for i := len(divelog.Dives) - 1; i > 0; i-- {
@@ -391,102 +369,6 @@ func renderNotFound(w http.ResponseWriter, title string) {
 		Supertitle: "404",
 		NotFound:   true,
 	})
-}
-
-func multiplexer() http.Handler {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("GET /hms/dives", renderDives)
-	trace(_https, "handler registered for /hms/dives")
-
-	mux.HandleFunc("GET /hms/dives/{$}", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/hms/dives", http.StatusMovedPermanently)
-	})
-	trace(_https, "handler registered for /hms/dives/")
-
-	mux.HandleFunc("GET /hms/sites", renderSites)
-	trace(_https, "handler registered for /hms/sites")
-
-	mux.HandleFunc("GET /hms/sites/{$}", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/hms/sites", http.StatusMovedPermanently)
-	})
-	trace(_https, "handler registered for /hms/sites/")
-
-	mux.HandleFunc("GET /hms/tags", renderTags)
-	trace(_https, "handler registered for /hms/tags")
-
-	mux.HandleFunc("GET /hms/tags/{$}", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/hms/tags", http.StatusMovedPermanently)
-	})
-	trace(_https, "handler registered for /hms/tags/")
-
-	mux.HandleFunc("GET /hms/dives/{id}", renderDive)
-	trace(_https, "handler registered for /hms/dives/{id}")
-
-	mux.HandleFunc("GET /hms/sites/{id}", renderSite)
-	trace(_https, "handler registered for /hms/sites/{id}")
-
-	mux.HandleFunc("GET /hms/tags/{tag}", renderTaggedDives)
-	trace(_https, "handler registered for /hms/tags/{tag}")
-
-	mux.HandleFunc("GET /hms/about", func(w http.ResponseWriter, r *http.Request) {
-		renderTemplate(w, Page{
-			Title:      "this site",
-			Supertitle: "about",
-			About:      true,
-		})
-	})
-	trace(_https, "handler registered for /hms/about")
-
-	// data handlers
-	mux.HandleFunc("GET /data/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-	})
-	trace(_https, "handler registered for /data/")
-
-	mux.HandleFunc("GET /data/sites", fetchSites)
-	trace(_https, "handler registered for /data/sites")
-	// DEVNOTE: /data/sites/{$} returns 404
-
-	mux.HandleFunc("GET /data/sites/{id}", fetchSite)
-	trace(_https, "handler registered for /data/sites/{id}")
-
-	mux.HandleFunc("GET /data/trips", fetchTrips)
-	trace(_https, "handler registered for /data/trips")
-	// DEVNOTE: /data/trips/{$} returns 404
-
-	mux.HandleFunc("GET /data/dives", fetchDives)
-	trace(_https, "handler registered for /data/dives")
-	// DEVNOTE: /data/dives/{$} returns 404
-
-	mux.HandleFunc("GET /data/dives/{id}", fetchDive)
-	trace(_https, "handler registered for /data/dives/{id}")
-
-	mux.HandleFunc("GET /data/tags", fetchTags)
-	trace(_https, "handler registered for /data/tags")
-	// DEVNOTE: /data/tags/{$} returns 404
-
-	mux.HandleFunc("GET /", defaultHandler)
-	trace(_https, "handler registered for /")
-
-	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/hms/dives", http.StatusMovedPermanently)
-	})
-	trace(_https, "handler registered for /{$}")
-
-	// local API handlers
-	if _control_block.localAPI {
-		mux.HandleFunc("GET /data/0", fetchAll)
-		trace(_https, "handler registered for /data/0")
-
-		mux.HandleFunc("POST /action/fail", forceFailure)
-		trace(_https, "handler registered for /action/fail")
-
-		mux.HandleFunc("POST /action/rebuild", rebuildDatabase)
-		trace(_https, "handler registered for /action/rebuild")
-	}
-
-	return mux
 }
 
 func send(w http.ResponseWriter, data []byte) {

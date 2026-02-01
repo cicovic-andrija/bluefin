@@ -7,9 +7,7 @@ import (
 
 // Local API; registered only in "dev" mode; error reporting through HTTPS responses is acceptable.
 
-func fetchAll(w http.ResponseWriter, r *http.Request) {
-	divelog := acquireDataAccess()
-
+func fetchAll(w http.ResponseWriter, r *http.Request, divelog *DiveLog) {
 	all := &All{
 		DiveSites: divelog.DiveSites,
 		DiveTrips: divelog.DiveTrips,

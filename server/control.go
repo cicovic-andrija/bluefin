@@ -113,7 +113,7 @@ func (c *control) assertRunning() {
 // DEVNOTE: Make sure errMsg contains stack trace, or at least caller details.
 func assert(condition bool, errMsg string) {
 	if !condition {
-		trace(_control, "assertion failed, sending failure signal to main...")
+		trace(_control, "assertion failed: %s: sending failure signal to main", errMsg)
 		_control_block.signalFailure(errors.New(errMsg))
 	}
 }

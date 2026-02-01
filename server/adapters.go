@@ -21,3 +21,9 @@ func StripPrefix(prefix string) Adapter {
 		return http.StripPrefix(prefix, h)
 	}
 }
+
+func funcWithDataAccess(fn func(http.ResponseWriter, *http.Request, *DiveLog)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fn(w, r, acquireDataAccess())
+	}
+}

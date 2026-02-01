@@ -100,7 +100,7 @@ Bluefin supports three server modes:
 Environment variables:
 
 - `DIVELOG_MODE` - Server mode: `dev`, `prod`, or `prod-proxy-http`
-- `DIVELOG_WATCH_DIR_PATH` - Path to the directory with Subsurface XML files
+- `DIVELOG_WATCH_DIR_PATH` - Path to the directory containing Subsurface XML files
 - `DIVELOG_IP_HOST` - IP address to bind
 - `DIVELOG_PORT` - TCP port to listen on
 - `DIVELOG_PRIVATE_KEY_PATH` - Path to TLS private key (required for `prod` mode)

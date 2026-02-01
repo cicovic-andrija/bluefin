@@ -14,7 +14,7 @@ import (
 	"src.acicovic.me/divelog/subsurface"
 )
 
-// Only one thread at a time (builder) will ever access this pointer,
+// Only one thread at a time, builder(), will ever access this pointer,
 // so there is no need to guard it (to keep things simple for now).
 var _divelog *DiveLog
 
@@ -34,6 +34,9 @@ func runAndWaitForBuilder() {
 	trace(_control, "mandatory database initialization on boot completed")
 }
 
+// Run in a goroutine.
+// For simplicity, the goroutine will not be gracefully stopped,
+// it will be force-stopped once the whole process is killed.
 func builder(firstRun chan error) {
 	var once sync.Once
 
