@@ -14,6 +14,6 @@ WORKDIR /srv
 COPY --from=build-stage /bin/bluefin ./bluefin
 ADD data ./data
 ENV DIVELOG_MODE=prod-proxy-http
-ENV DIVELOG_DBFILE_PATH=/srv/store/subsurfacedata.xml
+ENV DIVELOG_WATCH_DIR_PATH=/srv/store
 ENV DIVELOG_IP_HOST=0.0.0.0
 CMD ["/srv/bluefin"]

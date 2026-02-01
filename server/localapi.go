@@ -7,11 +7,11 @@ import (
 
 // Local API; registered only in "dev" mode; error reporting through HTTPS responses is acceptable.
 
-func fetchAll(w http.ResponseWriter, r *http.Request) {
+func fetchAll(w http.ResponseWriter, r *http.Request, divelog *DiveLog) {
 	all := &All{
-		DiveSites: bluefin.DiveSites,
-		DiveTrips: bluefin.DiveTrips,
-		Dives:     bluefin.Dives,
+		DiveSites: divelog.DiveSites,
+		DiveTrips: divelog.DiveTrips,
+		Dives:     divelog.Dives,
 	}
 	encoded, err := json.Marshal(all)
 	if err != nil {

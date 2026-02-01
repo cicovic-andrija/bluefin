@@ -7,7 +7,7 @@ Wants=network-online.target
 Type=simple
 Restart=always
 Environment="DIVELOG_MODE=prod-proxy-http"
-Environment="DIVELOG_DBFILE_PATH=/path/to/subsurfaceall.xml"
+Environment="DIVELOG_WATCH_DIR_PATH=/path/to/dir"
 Environment="DIVELOG_IP_HOST=127.0.0.1"
 Environment="DIVELOG_PORT=52000"
 User=uname

@@ -17,10 +17,13 @@ type DiveLog struct {
 }
 
 type DiveLogMetadata struct {
-	Program        string `json:"program"`
-	ProgramVersion string `json:"program_version"`
-	Source         string `json:"source"`
-	Units          string `json:"units"`
+	Program          string `json:"program"`
+	ProgramVersion   string `json:"program_version"`
+	Source           string `json:"source"`
+	ModificationTime string `json:"modification_time"`
+	Units            string `json:"units"`
+
+	modTime time.Time
 }
 
 type DiveSite struct {
