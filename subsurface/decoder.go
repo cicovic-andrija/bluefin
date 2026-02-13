@@ -369,7 +369,3 @@ func FindAttribute(tok *xml.StartElement, name string) (val string, ok bool) {
 	}
 	return
 }
-
-func IsValidDateTime(t time.Time) bool {
-	return !t.IsZero()
-}

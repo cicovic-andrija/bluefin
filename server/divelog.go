@@ -9,10 +9,11 @@ import (
 )
 
 type DiveLog struct {
-	Metadata         DiveLogMetadata
-	DiveSites        []*DiveSite
-	DiveTrips        []*DiveTrip
-	Dives            []*Dive
+	Metadata  DiveLogMetadata
+	DiveSites []*DiveSite
+	DiveTrips []*DiveTrip
+	Dives     []*Dive
+
 	sourceToSystemID map[string]int
 }
 
