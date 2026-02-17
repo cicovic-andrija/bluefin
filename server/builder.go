@@ -79,7 +79,7 @@ func buildAndSwap() error {
 	defer file.Close()
 
 	if err = subsurface.DecodeSubsurfaceDatabase(file, to(divelog)); err != nil {
-		return fmt.Errorf("failed to decode database: %v", err)
+		return fmt.Errorf("failed to decode database: %w", err)
 	}
 
 	swapLatestData(divelog)
@@ -100,14 +100,15 @@ type SubsurfaceCallbackHandler struct {
 	lastDiveID int
 }
 
-func (p *SubsurfaceCallbackHandler) HandleBegin() {
+func (p *SubsurfaceCallbackHandler) HandleBegin() error {
 	p.divelog.DiveSites = make([]*DiveSite, 1, 100)
 	p.divelog.DiveTrips = make([]*DiveTrip, 1, 100)
 	p.divelog.Dives = make([]*Dive, 1, 100)
 	p.divelog.sourceToSystemID = make(map[string]int)
+	return nil
 }
 
-func (p *SubsurfaceCallbackHandler) HandleDive(ddh subsurface.DiveDataHolder) int {
+func (p *SubsurfaceCallbackHandler) HandleDive(ddh subsurface.DiveDataHolder) (int, error) {
 	regularTags := make([]string, 0, len(ddh.Tags))
 	specialTags := make([]string, 0)
 	for _, tag := range ddh.Tags {
@@ -149,18 +150,30 @@ func (p *SubsurfaceCallbackHandler) HandleDive(ddh subsurface.DiveDataHolder) in
 		datetime: ddh.DateTime,
 	}
 	trace(_build, "%v", dive)
-	assert(dive.ID == len(p.divelog.Dives), "invalid Dive.ID")
+	if dive.ID != len(p.divelog.Dives) {
+		return 0, fmt.Errorf("invalid Dive.ID: got %d, want %d", dive.ID, len(p.divelog.Dives))
+	}
 
 	siteID, ok := p.divelog.sourceToSystemID[ddh.DiveSiteUUID]
-	assert(ok, "DiveDataHolder.DiveSiteUUID is not mapped to DiveSite.ID")
+	if !ok {
+		return 0, fmt.Errorf("DiveDataHolder.DiveSiteUUID=%q is not mapped to DiveSite.ID", ddh.DiveSiteUUID)
+	}
 	dive.DiveSiteID = siteID
-	assert(siteID > 0 && siteID < len(p.divelog.DiveSites), "invalid dive site ID mapping")
-	assert(p.divelog.DiveSites[siteID] != nil, "DiveSite ptr is nil")
+	if siteID <= 0 || siteID >= len(p.divelog.DiveSites) {
+		return 0, fmt.Errorf("invalid dive site ID mapping: siteID=%d, sitesLen=%d", siteID, len(p.divelog.DiveSites))
+	}
+	if p.divelog.DiveSites[siteID] == nil {
+		return 0, fmt.Errorf("DiveSite ptr is nil for siteID=%d", siteID)
+	}
 	trace(_link, "%v -> %v", dive, p.divelog.DiveSites[siteID])
 
 	dive.DiveTripID = ddh.DiveTripID
-	assert(ddh.DiveTripID > 0 && ddh.DiveTripID < len(p.divelog.DiveTrips), "invalid dive trip ID")
-	assert(p.divelog.DiveTrips[ddh.DiveTripID] != nil, "DiveTrip ptr is nil")
+	if ddh.DiveTripID <= 0 || ddh.DiveTripID >= len(p.divelog.DiveTrips) {
+		return 0, fmt.Errorf("invalid dive trip ID: tripID=%d, tripsLen=%d", ddh.DiveTripID, len(p.divelog.DiveTrips))
+	}
+	if p.divelog.DiveTrips[ddh.DiveTripID] == nil {
+		return 0, fmt.Errorf("DiveTrip ptr is nil for tripID=%d", ddh.DiveTripID)
+	}
 	trace(_link, "%v -> %v", dive, p.divelog.DiveTrips[ddh.DiveTripID])
 
 	dive.ProcessSpecialTags(specialTags)
@@ -169,10 +182,10 @@ func (p *SubsurfaceCallbackHandler) HandleDive(ddh subsurface.DiveDataHolder) in
 	p.divelog.Dives = append(p.divelog.Dives, dive)
 	p.lastDiveID++
 
-	return dive.ID
+	return dive.ID, nil
 }
 
-func (p *SubsurfaceCallbackHandler) HandleDiveSite(uuid string, name string, coords string, description string) int {
+func (p *SubsurfaceCallbackHandler) HandleDiveSite(uuid string, name string, coords string, description string) (int, error) {
 	region := UnlabeledRegion
 	if strings.HasPrefix(description, PrefixForTagsInDescription) {
 		var specialTags string
@@ -207,7 +220,9 @@ func (p *SubsurfaceCallbackHandler) HandleDiveSite(uuid string, name string, coo
 		sourceID: uuid,
 	}
 	trace(_build, "%v", site)
-	assert(site.ID == len(p.divelog.DiveSites), "invalid DiveSite.ID")
+	if site.ID != len(p.divelog.DiveSites) {
+		return 0, fmt.Errorf("invalid DiveSite.ID: got %d, want %d", site.ID, len(p.divelog.DiveSites))
+	}
 
 	p.divelog.sourceToSystemID[site.sourceID] = site.ID
 	trace(_map, "sourceToSystemID %q -> %d", site.sourceID, site.ID)
@@ -215,47 +230,64 @@ func (p *SubsurfaceCallbackHandler) HandleDiveSite(uuid string, name string, coo
 	p.divelog.DiveSites = append(p.divelog.DiveSites, site)
 	p.lastSiteID++
 
-	return site.ID
+	return site.ID, nil
 }
 
-func (p *SubsurfaceCallbackHandler) HandleDiveTrip(label string) int {
+func (p *SubsurfaceCallbackHandler) HandleDiveTrip(label string) (int, error) {
 	trip := &DiveTrip{
 		ID:    p.lastTripID + 1,
 		Label: label,
 	}
 	trace(_build, "%v", trip)
-	assert(trip.ID == len(p.divelog.DiveTrips), "invalid DiveTrip.ID")
+	if trip.ID != len(p.divelog.DiveTrips) {
+		return 0, fmt.Errorf("invalid DiveTrip.ID: got %d, want %d", trip.ID, len(p.divelog.DiveTrips))
+	}
 
 	p.divelog.DiveTrips = append(p.divelog.DiveTrips, trip)
 	p.lastTripID++
 
-	return trip.ID
+	return trip.ID, nil
 }
 
-func (p *SubsurfaceCallbackHandler) HandleEnd() {
-	assert(len(p.divelog.Dives)-1 == p.lastDiveID, "invalid Dives slice length")
-	assert(len(p.divelog.DiveSites)-1 == p.lastSiteID, "invalid DiveSites slice length")
-	assert(len(p.divelog.DiveTrips)-1 == p.lastTripID, "invalid DiveTrips slice length")
+func (p *SubsurfaceCallbackHandler) HandleEnd() error {
+	if len(p.divelog.Dives)-1 != p.lastDiveID {
+		return fmt.Errorf("invalid Dives slice length: divesLen=%d, lastDiveID=%d", len(p.divelog.Dives), p.lastDiveID)
+	}
+	if len(p.divelog.DiveSites)-1 != p.lastSiteID {
+		return fmt.Errorf("invalid DiveSites slice length: sitesLen=%d, lastSiteID=%d", len(p.divelog.DiveSites), p.lastSiteID)
+	}
+	if len(p.divelog.DiveTrips)-1 != p.lastTripID {
+		return fmt.Errorf("invalid DiveTrips slice length: tripsLen=%d, lastTripID=%d", len(p.divelog.DiveTrips), p.lastTripID)
+	}
+	return nil
 }
 
-func (p *SubsurfaceCallbackHandler) HandleGeoData(siteID int, cat int, label string) {
-	assert(p.divelog.DiveSites[siteID] != nil, "DiveSite ptr is nil")
+func (p *SubsurfaceCallbackHandler) HandleGeoData(siteID int, cat int, label string) error {
+	if siteID < 0 || siteID >= len(p.divelog.DiveSites) {
+		return fmt.Errorf("invalid siteID=%d for DiveSites len=%d", siteID, len(p.divelog.DiveSites))
+	}
+	if p.divelog.DiveSites[siteID] == nil {
+		return fmt.Errorf("DiveSite ptr is nil for siteID=%d", siteID)
+	}
 	site := p.divelog.DiveSites[siteID]
 	for _, lbl := range site.GeoLabels {
 		if lbl == label {
-			return
+			return nil
 		}
 	}
 	site.GeoLabels = append(site.GeoLabels, label)
+	return nil
 }
 
-func (p *SubsurfaceCallbackHandler) HandleHeader(program string, version string) {
+func (p *SubsurfaceCallbackHandler) HandleHeader(program string, version string) error {
 	p.divelog.Metadata.Program = program
 	p.divelog.Metadata.ProgramVersion = version
+	return nil
 }
 
-func (p *SubsurfaceCallbackHandler) HandleSkip(element string) {
+func (p *SubsurfaceCallbackHandler) HandleSkip(element string) error {
 	// do nothing
+	return nil
 }
 
 func findLatestDataFile() (path string, mt time.Time, err error) {
