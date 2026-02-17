@@ -206,6 +206,9 @@ func DecodeSubsurfaceDatabase(r io.Reader, h Handler) error {
 	return nil
 }
 
+// FlattenAndReport only loads the data from the XML struct into a DiveDataHolder,
+// and passes it to the Handler. It sometimes converts data types, but it
+// doesn't perform any normalization or validation.
 func FlattenAndReport(diveXML *DiveXML, tripID int, h Handler) error {
 	var (
 		ddh = DiveDataHolder{
@@ -259,7 +262,6 @@ func FlattenAndReport(diveXML *DiveXML, tripID int, h Handler) error {
 		ddh.Visibility = IntNull
 	}
 
-	// Split tags without trimming or filtering - normalization happens later
 	ddh.Tags = strings.Split(diveXML.Tags, ",")
 
 	// date format is yyyy-mm-dd

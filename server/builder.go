@@ -107,7 +107,6 @@ func (p *SubsurfaceCallbackHandler) HandleBegin() error {
 }
 
 func (p *SubsurfaceCallbackHandler) HandleDive(ddh subsurface.DiveDataHolder) (int, error) {
-	// Pure loader: assign raw tags without processing
 	dive := &Dive{
 		ID:     p.lastDiveID + 1,
 		Number: ddh.DiveNumber,
@@ -115,7 +114,7 @@ func (p *SubsurfaceCallbackHandler) HandleDive(ddh subsurface.DiveDataHolder) (i
 		Duration:        ddh.Duration,
 		Rating5:         ddh.Rating,
 		Visibility5:     ddh.Visibility,
-		Tags:            ddh.Tags, // Raw tags - normalization happens later
+		Tags:            ddh.Tags,
 		Salinity:        ddh.WaterSalinity,
 		DateTimeIn:      ddh.DateTime.Format(time.RFC3339),
 		OperatorDM:      ddh.DiveMasterOrOperator,
@@ -165,8 +164,6 @@ func (p *SubsurfaceCallbackHandler) HandleDive(ddh subsurface.DiveDataHolder) (i
 	}
 	trace(_link, "%v -> %v", dive, p.divelog.DiveTrips[ddh.DiveTripID])
 
-	// No normalization here - that happens in DiveLog.Normalize()
-
 	p.divelog.Dives = append(p.divelog.Dives, dive)
 	p.lastDiveID++
 
@@ -174,13 +171,11 @@ func (p *SubsurfaceCallbackHandler) HandleDive(ddh subsurface.DiveDataHolder) (i
 }
 
 func (p *SubsurfaceCallbackHandler) HandleDiveSite(uuid string, name string, coords string, description string) (int, error) {
-	// Pure loader: store raw description, leave Region empty for normalization later
 	site := &DiveSite{
 		ID:          p.lastSiteID + 1,
 		Name:        name,
 		Coordinates: coords,
-		Description: description, // Raw description - normalization happens later
-		Region:      "",          // Empty - will be set in DiveLog.Normalize()
+		Description: description,
 
 		sourceID: uuid,
 	}
@@ -215,7 +210,16 @@ func (p *SubsurfaceCallbackHandler) HandleDiveTrip(label string) (int, error) {
 }
 
 func (p *SubsurfaceCallbackHandler) HandleEnd() error {
-	// All normalization and validation happens here
+	if len(p.divelog.Dives)-1 != p.lastDiveID {
+		return fmt.Errorf("invalid Dives slice length: divesLen=%d, lastDiveID=%d", len(p.divelog.Dives), p.lastDiveID)
+	}
+	if len(p.divelog.DiveSites)-1 != p.lastSiteID {
+		return fmt.Errorf("invalid DiveSites slice length: sitesLen=%d, lastSiteID=%d", len(p.divelog.DiveSites), p.lastSiteID)
+	}
+	if len(p.divelog.DiveTrips)-1 != p.lastTripID {
+		return fmt.Errorf("invalid DiveTrips slice length: tripsLen=%d, lastTripID=%d", len(p.divelog.DiveTrips), p.lastTripID)
+	}
+
 	return p.divelog.Normalize()
 }
 
