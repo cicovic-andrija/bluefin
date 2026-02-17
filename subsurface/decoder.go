@@ -259,11 +259,8 @@ func FlattenAndReport(diveXML *DiveXML, tripID int, h Handler) error {
 		ddh.Visibility = IntNull
 	}
 
-	for _, tag := range strings.Split(diveXML.Tags, ",") {
-		if trimmed := strings.TrimSpace(tag); trimmed != "" {
-			ddh.Tags = append(ddh.Tags, trimmed)
-		}
-	}
+	// Split tags without trimming or filtering - normalization happens later
+	ddh.Tags = strings.Split(diveXML.Tags, ",")
 
 	// date format is yyyy-mm-dd
 	// time format is hh:mm:ss

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
+	"unicode"
 
 	"src.acicovic.me/divelog/server/utils"
 )
@@ -156,4 +157,158 @@ func (dl *DiveLog) LargestDiveID() int {
 
 func (dl *DiveLog) LargestSiteID() int {
 	return len(dl.DiveSites) - 1
+}
+
+// Normalize performs all normalization operations on the DiveLog data.
+// This includes structural validation, tag processing, region extraction,
+// and calling individual Dive normalization methods.
+func (dl *DiveLog) Normalize() error {
+	// Validate structural invariants: index == ID for all slices
+	if err := dl.validateStructure(); err != nil {
+		return err
+	}
+
+	// Normalize DiveSites
+	for i := 1; i < len(dl.DiveSites); i++ {
+		if err := dl.normalizeDiveSite(dl.DiveSites[i]); err != nil {
+			return fmt.Errorf("normalize DiveSite[%d]: %w", i, err)
+		}
+	}
+
+	// Normalize GeoLabels (deduplicate)
+	for i := 1; i < len(dl.DiveSites); i++ {
+		dl.normalizeGeoLabels(dl.DiveSites[i])
+	}
+
+	// Normalize Dives
+	for i := 1; i < len(dl.Dives); i++ {
+		if err := dl.normalizeDive(dl.Dives[i]); err != nil {
+			return fmt.Errorf("normalize Dive[%d]: %w", i, err)
+		}
+	}
+
+	return nil
+}
+
+func (dl *DiveLog) validateStructure() error {
+	// Validate Dives
+	for i := 1; i < len(dl.Dives); i++ {
+		if dl.Dives[i] == nil {
+			return fmt.Errorf("Dive[%d] is nil", i)
+		}
+		if dl.Dives[i].ID != i {
+			return fmt.Errorf("invalid Dive.ID: got %d, want %d", dl.Dives[i].ID, i)
+		}
+	}
+
+	// Validate DiveSites
+	for i := 1; i < len(dl.DiveSites); i++ {
+		if dl.DiveSites[i] == nil {
+			return fmt.Errorf("DiveSite[%d] is nil", i)
+		}
+		if dl.DiveSites[i].ID != i {
+			return fmt.Errorf("invalid DiveSite.ID: got %d, want %d", dl.DiveSites[i].ID, i)
+		}
+	}
+
+	// Validate DiveTrips
+	for i := 1; i < len(dl.DiveTrips); i++ {
+		if dl.DiveTrips[i] == nil {
+			return fmt.Errorf("DiveTrip[%d] is nil", i)
+		}
+		if dl.DiveTrips[i].ID != i {
+			return fmt.Errorf("invalid DiveTrip.ID: got %d, want %d", dl.DiveTrips[i].ID, i)
+		}
+	}
+
+	return nil
+}
+
+func (dl *DiveLog) normalizeDiveSite(site *DiveSite) error {
+	if site == nil {
+		return fmt.Errorf("site is nil")
+	}
+
+	description := site.Description
+	region := UnlabeledRegion
+
+	// Parse and strip leading PrefixForTagsInDescription metadata
+	if strings.HasPrefix(description, PrefixForTagsInDescription) {
+		var specialTags string
+		if i := strings.IndexFunc(description, unicode.IsSpace); i != -1 {
+			specialTags = strings.TrimPrefix(description[:i], PrefixForTagsInDescription)
+			description = strings.TrimSpace(description[i:])
+		} else {
+			specialTags = strings.TrimPrefix(description, PrefixForTagsInDescription)
+			description = ""
+		}
+
+		// Extract region from special tags
+		if after, ok := strings.CutPrefix(specialTags, RegionTagPrefix); ok {
+			if value, ok := SpecialTagValueMappings[after]; ok {
+				region = value
+			}
+		}
+	}
+
+	// Set default description if empty
+	if strings.TrimSpace(description) == "" {
+		description = UndefinedDescription
+	}
+
+	site.Description = description
+	site.Region = region
+
+	return nil
+}
+
+func (dl *DiveLog) normalizeGeoLabels(site *DiveSite) {
+	if site == nil || len(site.GeoLabels) == 0 {
+		return
+	}
+
+	// Deduplicate labels
+	seen := make(map[string]bool)
+	deduped := make([]string, 0, len(site.GeoLabels))
+	for _, label := range site.GeoLabels {
+		trimmed := strings.TrimSpace(label)
+		if trimmed != "" && !seen[trimmed] {
+			seen[trimmed] = true
+			deduped = append(deduped, trimmed)
+		}
+	}
+	site.GeoLabels = deduped
+}
+
+func (dl *DiveLog) normalizeDive(dive *Dive) error {
+	if dive == nil {
+		return fmt.Errorf("dive is nil")
+	}
+
+	// Clean tags: trim whitespace and drop empty entries
+	cleanedTags := make([]string, 0, len(dive.Tags))
+	for _, tag := range dive.Tags {
+		trimmed := strings.TrimSpace(tag)
+		if trimmed != "" {
+			cleanedTags = append(cleanedTags, trimmed)
+		}
+	}
+
+	// Split tags into special (prefix _) vs regular
+	regularTags := make([]string, 0, len(cleanedTags))
+	specialTags := make([]string, 0)
+	for _, tag := range cleanedTags {
+		if utils.IsSpecialTag(tag) {
+			specialTags = append(specialTags, tag)
+		} else {
+			regularTags = append(regularTags, tag)
+		}
+	}
+
+	// Process special tags and normalize dive
+	dive.ProcessSpecialTags(specialTags)
+	dive.Tags = regularTags
+	dive.Normalize()
+
+	return nil
 }

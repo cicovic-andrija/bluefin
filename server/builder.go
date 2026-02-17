@@ -8,9 +8,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"unicode"
 
-	"src.acicovic.me/divelog/server/utils"
 	"src.acicovic.me/divelog/subsurface"
 )
 
@@ -109,16 +107,7 @@ func (p *SubsurfaceCallbackHandler) HandleBegin() error {
 }
 
 func (p *SubsurfaceCallbackHandler) HandleDive(ddh subsurface.DiveDataHolder) (int, error) {
-	regularTags := make([]string, 0, len(ddh.Tags))
-	specialTags := make([]string, 0)
-	for _, tag := range ddh.Tags {
-		if utils.IsSpecialTag(tag) {
-			specialTags = append(specialTags, tag)
-		} else {
-			regularTags = append(regularTags, tag)
-		}
-	}
-
+	// Pure loader: assign raw tags without processing
 	dive := &Dive{
 		ID:     p.lastDiveID + 1,
 		Number: ddh.DiveNumber,
@@ -126,7 +115,7 @@ func (p *SubsurfaceCallbackHandler) HandleDive(ddh subsurface.DiveDataHolder) (i
 		Duration:        ddh.Duration,
 		Rating5:         ddh.Rating,
 		Visibility5:     ddh.Visibility,
-		Tags:            regularTags,
+		Tags:            ddh.Tags, // Raw tags - normalization happens later
 		Salinity:        ddh.WaterSalinity,
 		DateTimeIn:      ddh.DateTime.Format(time.RFC3339),
 		OperatorDM:      ddh.DiveMasterOrOperator,
@@ -176,8 +165,7 @@ func (p *SubsurfaceCallbackHandler) HandleDive(ddh subsurface.DiveDataHolder) (i
 	}
 	trace(_link, "%v -> %v", dive, p.divelog.DiveTrips[ddh.DiveTripID])
 
-	dive.ProcessSpecialTags(specialTags)
-	dive.Normalize()
+	// No normalization here - that happens in DiveLog.Normalize()
 
 	p.divelog.Dives = append(p.divelog.Dives, dive)
 	p.lastDiveID++
@@ -186,36 +174,13 @@ func (p *SubsurfaceCallbackHandler) HandleDive(ddh subsurface.DiveDataHolder) (i
 }
 
 func (p *SubsurfaceCallbackHandler) HandleDiveSite(uuid string, name string, coords string, description string) (int, error) {
-	region := UnlabeledRegion
-	if strings.HasPrefix(description, PrefixForTagsInDescription) {
-		var specialTags string
-		if i := strings.IndexFunc(description, unicode.IsSpace); i != -1 {
-			specialTags = strings.TrimPrefix(description[:i], PrefixForTagsInDescription)
-			description = strings.TrimSpace(description[i:])
-		} else {
-			specialTags = strings.TrimPrefix(description, PrefixForTagsInDescription)
-			description = ""
-		}
-
-		// DEVNOTE: DiveSite only supports one special tag for now: {RegionTagPrefix}{value}.
-		// If there arises a need for more, this will need to be refactored.
-		if after, ok := strings.CutPrefix(specialTags, RegionTagPrefix); ok {
-			if value, ok := SpecialTagValueMappings[after]; ok {
-				region = value
-			}
-		}
-	}
-
-	if strings.TrimSpace(description) == "" {
-		description = UndefinedDescription
-	}
-
+	// Pure loader: store raw description, leave Region empty for normalization later
 	site := &DiveSite{
 		ID:          p.lastSiteID + 1,
 		Name:        name,
 		Coordinates: coords,
-		Description: description,
-		Region:      region,
+		Description: description, // Raw description - normalization happens later
+		Region:      "",          // Empty - will be set in DiveLog.Normalize()
 
 		sourceID: uuid,
 	}
@@ -250,16 +215,8 @@ func (p *SubsurfaceCallbackHandler) HandleDiveTrip(label string) (int, error) {
 }
 
 func (p *SubsurfaceCallbackHandler) HandleEnd() error {
-	if len(p.divelog.Dives)-1 != p.lastDiveID {
-		return fmt.Errorf("invalid Dives slice length: divesLen=%d, lastDiveID=%d", len(p.divelog.Dives), p.lastDiveID)
-	}
-	if len(p.divelog.DiveSites)-1 != p.lastSiteID {
-		return fmt.Errorf("invalid DiveSites slice length: sitesLen=%d, lastSiteID=%d", len(p.divelog.DiveSites), p.lastSiteID)
-	}
-	if len(p.divelog.DiveTrips)-1 != p.lastTripID {
-		return fmt.Errorf("invalid DiveTrips slice length: tripsLen=%d, lastTripID=%d", len(p.divelog.DiveTrips), p.lastTripID)
-	}
-	return nil
+	// All normalization and validation happens here
+	return p.divelog.Normalize()
 }
 
 func (p *SubsurfaceCallbackHandler) HandleGeoData(siteID int, cat int, label string) error {
@@ -269,12 +226,8 @@ func (p *SubsurfaceCallbackHandler) HandleGeoData(siteID int, cat int, label str
 	if p.divelog.DiveSites[siteID] == nil {
 		return fmt.Errorf("DiveSite ptr is nil for siteID=%d", siteID)
 	}
+	// Pure loader: append raw label without deduplication - normalization happens later
 	site := p.divelog.DiveSites[siteID]
-	for _, lbl := range site.GeoLabels {
-		if lbl == label {
-			return nil
-		}
-	}
 	site.GeoLabels = append(site.GeoLabels, label)
 	return nil
 }
