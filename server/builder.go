@@ -230,7 +230,7 @@ func (p *SubsurfaceCallbackHandler) HandleGeoData(siteID int, cat int, label str
 	if p.divelog.DiveSites[siteID] == nil {
 		return fmt.Errorf("DiveSite ptr is nil for siteID=%d", siteID)
 	}
-	// Pure loader: append raw label without deduplication - normalization happens later
+
 	site := p.divelog.DiveSites[siteID]
 	site.GeoLabels = append(site.GeoLabels, label)
 	return nil
