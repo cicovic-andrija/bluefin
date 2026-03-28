@@ -2,6 +2,15 @@ package server
 
 import "net/http"
 
+// TODO: r/o is not enforced, implement a proxy that exposes a r/o interface
+func readonlyHandler(fn func(http.ResponseWriter, *http.Request, *DiveLog)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fn(w, r, acquireDataAccess())
+	}
+}
+
+// Functions below are useful, but currently not used.
+
 // Adapter is an HTTP(S) handler that invokes another HTTP(S) handler.
 type Adapter func(h http.Handler) http.Handler
 
@@ -19,11 +28,5 @@ func Adapt(h http.Handler, adapters ...Adapter) http.Handler {
 func StripPrefix(prefix string) Adapter {
 	return func(h http.Handler) http.Handler {
 		return http.StripPrefix(prefix, h)
-	}
-}
-
-func funcWithDataAccess(fn func(http.ResponseWriter, *http.Request, *DiveLog)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		fn(w, r, acquireDataAccess())
 	}
 }

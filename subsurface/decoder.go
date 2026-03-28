@@ -3,6 +3,7 @@ package subsurface
 import (
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -23,14 +24,14 @@ var (
 )
 
 type Handler interface {
-	HandleBegin()
-	HandleEnd()
-	HandleHeader(program string, version string)
-	HandleSkip(element string)
-	HandleDiveSite(uuid string, name string, coords string, description string) int
-	HandleGeoData(siteID int, cat int, label string)
-	HandleDiveTrip(label string) int
-	HandleDive(ddh DiveDataHolder) int
+	HandleBegin() error
+	HandleEnd() error
+	HandleHeader(program string, version string) error
+	HandleSkip(element string) error
+	HandleDiveSite(uuid string, name string, coords string, description string) (int, error)
+	HandleGeoData(siteID int, cat int, label string) error
+	HandleDiveTrip(label string) (int, error)
+	HandleDive(ddh DiveDataHolder) (int, error)
 }
 
 type Decoder struct {
@@ -90,17 +91,23 @@ func DecodeSubsurfaceDatabase(r io.Reader, h Handler) error {
 	if startTag, err = decoder.ExpectStart("divelog"); err != nil {
 		return err
 	}
-	h.HandleBegin()
+	if err := h.HandleBegin(); err != nil {
+		return fmt.Errorf("HandleBegin: %w", err)
+	}
 
 	program, _ := FindAttribute(startTag, "program")
 	version, _ := FindAttribute(startTag, "version")
-	h.HandleHeader(program, version)
+	if err := h.HandleHeader(program, version); err != nil {
+		return fmt.Errorf("HandleHeader(program=%q, version=%q): %w", program, version, err)
+	}
 
 	// <settings>
 	if err = decoder.SkipElement("settings"); err != nil {
 		return err
 	}
-	h.HandleSkip("settings")
+	if err := h.HandleSkip("settings"); err != nil {
+		return fmt.Errorf("HandleSkip(element=%q): %w", "settings", err)
+	}
 	// </settings>
 
 	// <divesites>
@@ -121,12 +128,24 @@ func DecodeSubsurfaceDatabase(r io.Reader, h Handler) error {
 			} else {
 				// DEVNOTE: this could have been parsed the same way the dive data was parsed
 				// it was left like this to demonstrate how powerful Go's XML parser can be
-				siteID := h.HandleDiveSite(siteXML.UUID, siteXML.Name, siteXML.GPS, siteXML.Description)
+				siteID, err := h.HandleDiveSite(siteXML.UUID, siteXML.Name, siteXML.GPS, siteXML.Description)
+				if err != nil {
+					return fmt.Errorf("HandleDiveSite(uuid=%q): %w", siteXML.UUID, err)
+				}
 				for _, geoData := range siteXML.Geos {
 					if cat, err := strconv.Atoi(geoData.Cat); err != nil {
 						return ErrInvalidFormat
 					} else {
-						h.HandleGeoData(siteID, cat, geoData.Value)
+						if err := h.HandleGeoData(siteID, cat, geoData.Value); err != nil {
+							return fmt.Errorf(
+								"HandleGeoData(siteUUID=%q, siteID=%d, cat=%d, label=%q): %w",
+								siteXML.UUID,
+								siteID,
+								cat,
+								geoData.Value,
+								err,
+							)
+						}
 					}
 				}
 			}
@@ -151,7 +170,10 @@ func DecodeSubsurfaceDatabase(r io.Reader, h Handler) error {
 		if startTag != nil {
 			// <trip ...> 1..N
 			location, _ := FindAttribute(startTag, "location")
-			tripID := h.HandleDiveTrip(location)
+			tripID, err := h.HandleDiveTrip(location)
+			if err != nil {
+				return fmt.Errorf("HandleDiveTrip(location=%q): %w", location, err)
+			}
 			for {
 				if startTag, err = decoder.NextOrEnd("dive", "trip"); err != nil {
 					return err
@@ -176,12 +198,17 @@ func DecodeSubsurfaceDatabase(r io.Reader, h Handler) error {
 		}
 	}
 
-	h.HandleEnd()
+	if err := h.HandleEnd(); err != nil {
+		return fmt.Errorf("HandleEnd: %w", err)
+	}
 	// </divelog>
 
 	return nil
 }
 
+// FlattenAndReport only loads the data from the XML struct into a DiveDataHolder,
+// and passes it to the Handler. It sometimes converts data types, but it
+// doesn't perform any normalization or validation.
 func FlattenAndReport(diveXML *DiveXML, tripID int, h Handler) error {
 	var (
 		ddh = DiveDataHolder{
@@ -235,11 +262,7 @@ func FlattenAndReport(diveXML *DiveXML, tripID int, h Handler) error {
 		ddh.Visibility = IntNull
 	}
 
-	for _, tag := range strings.Split(diveXML.Tags, ",") {
-		if trimmed := strings.TrimSpace(tag); trimmed != "" {
-			ddh.Tags = append(ddh.Tags, trimmed)
-		}
-	}
+	ddh.Tags = strings.Split(diveXML.Tags, ",")
 
 	// date format is yyyy-mm-dd
 	// time format is hh:mm:ss
@@ -261,7 +284,15 @@ func FlattenAndReport(diveXML *DiveXML, tripID int, h Handler) error {
 		ddh.TemperatureWaterMin = diveXML.TemperatureManual.Water
 	}
 
-	h.HandleDive(ddh)
+	if _, err := h.HandleDive(ddh); err != nil {
+		return fmt.Errorf(
+			"HandleDive(diveNumber=%d, diveSiteUUID=%q, tripID=%d): %w",
+			ddh.DiveNumber,
+			ddh.DiveSiteUUID,
+			tripID,
+			err,
+		)
+	}
 	return nil
 }
 
@@ -368,8 +399,4 @@ func FindAttribute(tok *xml.StartElement, name string) (val string, ok bool) {
 		}
 	}
 	return
-}
-
-func IsValidDateTime(t time.Time) bool {
-	return !t.IsZero()
 }

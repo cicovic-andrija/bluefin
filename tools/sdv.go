@@ -34,42 +34,47 @@ type Handler struct {
 	fname string
 }
 
-func (h Handler) HandleBegin() {
+func (h Handler) HandleBegin() error {
 	fmt.Printf("SUBSURFACE_DATABASE %q\n", filepath.Base(h.fname))
+	return nil
 }
 
-func (h Handler) HandleEnd() {
+func (h Handler) HandleEnd() error {
 	fmt.Printf("END.\n")
+	return nil
 }
 
-func (h Handler) HandleSkip(element string) {
+func (h Handler) HandleSkip(element string) error {
 	fmt.Printf(">>>>>\nSKIP ELEMENT %q\n<<<<<\n", element)
+	return nil
 }
 
-func (h Handler) HandleHeader(program string, version string) {
+func (h Handler) HandleHeader(program string, version string) error {
 	fmt.Printf("\tHEADER\n")
 	fmt.Printf("\t\tPROGRAM = %q\n", program)
 	fmt.Printf("\t\tVERSION = %q\n", version)
+	return nil
 
 }
 
-func (h Handler) HandleDiveSite(uuid string, name string, coords string, description string) int {
+func (h Handler) HandleDiveSite(uuid string, name string, coords string, description string) (int, error) {
 	fmt.Printf("\tDIVE_SITE\n")
 	fmt.Printf("\t\tUUID = %q\n\t\tNAME = %q\n\t\tCOORDS = %q\n\t\tDESCRIPTION = %q\n", uuid, name, coords, description)
-	return 0
+	return 0, nil
 }
 
-func (h Handler) HandleGeoData(id int, cat int, label string) {
+func (h Handler) HandleGeoData(id int, cat int, label string) error {
 	fmt.Printf("\t\tGEO_DATA\n")
 	fmt.Printf("\t\t\tCATEGORY = %d\n\t\t\tLABEL = %q\n", cat, label)
+	return nil
 }
 
-func (h Handler) HandleDiveTrip(label string) int {
+func (h Handler) HandleDiveTrip(label string) (int, error) {
 	fmt.Printf("\tDIVE_TRIP %q\n", label)
-	return 0
+	return 0, nil
 }
 
-func (h Handler) HandleDive(ddh subsurface.DiveDataHolder) int {
+func (h Handler) HandleDive(ddh subsurface.DiveDataHolder) (int, error) {
 	fmt.Printf("\t\tDIVE\n")
 	fmt.Printf("\t\t\tNUMBER = %d\n", ddh.DiveNumber)
 	fmt.Printf("\t\t\tRATING = %d\n", ddh.Rating)
@@ -104,5 +109,5 @@ func (h Handler) HandleDive(ddh subsurface.DiveDataHolder) int {
 	fmt.Printf("\t\t\tTEMP_WATER_MIN = %q\n", ddh.TemperatureWaterMin)
 	fmt.Printf("\t\t\tTEMP_AIR = %q\n", ddh.TemperatureAir)
 	fmt.Printf("\t\t\tSURFACE_PRESSURE = %q\n", ddh.SurfacePressure)
-	return 0
+	return 0, nil
 }

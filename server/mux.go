@@ -5,7 +5,7 @@ import "net/http"
 func multiplexer() http.Handler {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /hms/dives", funcWithDataAccess(renderDives))
+	mux.HandleFunc("GET /hms/dives", readonlyHandler(renderDives))
 	trace(_https, "handler registered for /hms/dives")
 
 	mux.HandleFunc("GET /hms/dives/{$}", func(w http.ResponseWriter, r *http.Request) {
@@ -13,7 +13,7 @@ func multiplexer() http.Handler {
 	})
 	trace(_https, "handler registered for /hms/dives/")
 
-	mux.HandleFunc("GET /hms/sites", funcWithDataAccess(renderSites))
+	mux.HandleFunc("GET /hms/sites", readonlyHandler(renderSites))
 	trace(_https, "handler registered for /hms/sites")
 
 	mux.HandleFunc("GET /hms/sites/{$}", func(w http.ResponseWriter, r *http.Request) {
@@ -21,7 +21,7 @@ func multiplexer() http.Handler {
 	})
 	trace(_https, "handler registered for /hms/sites/")
 
-	mux.HandleFunc("GET /hms/tags", funcWithDataAccess(renderTags))
+	mux.HandleFunc("GET /hms/tags", readonlyHandler(renderTags))
 	trace(_https, "handler registered for /hms/tags")
 
 	mux.HandleFunc("GET /hms/tags/{$}", func(w http.ResponseWriter, r *http.Request) {
@@ -29,13 +29,13 @@ func multiplexer() http.Handler {
 	})
 	trace(_https, "handler registered for /hms/tags/")
 
-	mux.HandleFunc("GET /hms/dives/{id}", funcWithDataAccess(renderDive))
+	mux.HandleFunc("GET /hms/dives/{id}", readonlyHandler(renderDive))
 	trace(_https, "handler registered for /hms/dives/{id}")
 
-	mux.HandleFunc("GET /hms/sites/{id}", funcWithDataAccess(renderSite))
+	mux.HandleFunc("GET /hms/sites/{id}", readonlyHandler(renderSite))
 	trace(_https, "handler registered for /hms/sites/{id}")
 
-	mux.HandleFunc("GET /hms/tags/{tag}", funcWithDataAccess(renderTaggedDives))
+	mux.HandleFunc("GET /hms/tags/{tag}", readonlyHandler(renderTaggedDives))
 	trace(_https, "handler registered for /hms/tags/{tag}")
 
 	mux.HandleFunc("GET /hms/about", func(w http.ResponseWriter, r *http.Request) {
@@ -53,25 +53,25 @@ func multiplexer() http.Handler {
 	})
 	trace(_https, "handler registered for /data/")
 
-	mux.HandleFunc("GET /data/sites", funcWithDataAccess(fetchSites))
+	mux.HandleFunc("GET /data/sites", readonlyHandler(fetchSites))
 	trace(_https, "handler registered for /data/sites")
 	// DEVNOTE: /data/sites/{$} returns 404
 
-	mux.HandleFunc("GET /data/sites/{id}", funcWithDataAccess(fetchSite))
+	mux.HandleFunc("GET /data/sites/{id}", readonlyHandler(fetchSite))
 	trace(_https, "handler registered for /data/sites/{id}")
 
-	mux.HandleFunc("GET /data/trips", funcWithDataAccess(fetchTrips))
+	mux.HandleFunc("GET /data/trips", readonlyHandler(fetchTrips))
 	trace(_https, "handler registered for /data/trips")
 	// DEVNOTE: /data/trips/{$} returns 404
 
-	mux.HandleFunc("GET /data/dives", funcWithDataAccess(fetchDives))
+	mux.HandleFunc("GET /data/dives", readonlyHandler(fetchDives))
 	trace(_https, "handler registered for /data/dives")
 	// DEVNOTE: /data/dives/{$} returns 404
 
-	mux.HandleFunc("GET /data/dives/{id}", funcWithDataAccess(fetchDive))
+	mux.HandleFunc("GET /data/dives/{id}", readonlyHandler(fetchDive))
 	trace(_https, "handler registered for /data/dives/{id}")
 
-	mux.HandleFunc("GET /data/tags", funcWithDataAccess(fetchTags))
+	mux.HandleFunc("GET /data/tags", readonlyHandler(fetchTags))
 	trace(_https, "handler registered for /data/tags")
 	// DEVNOTE: /data/tags/{$} returns 404
 
@@ -85,7 +85,7 @@ func multiplexer() http.Handler {
 
 	// local API handlers
 	if _control_block.localAPI {
-		mux.HandleFunc("GET /data/0", funcWithDataAccess(fetchAll))
+		mux.HandleFunc("GET /data/0", readonlyHandler(fetchAll))
 		trace(_https, "handler registered for /data/0")
 
 		mux.HandleFunc("POST /action/fail", forceFailure)
